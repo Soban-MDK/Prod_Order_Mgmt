@@ -1,6 +1,7 @@
 from flask import Flask
 from .models import db, User
 
+
 def create_app():
     app = Flask(__name__)
     app.config['SECRET_KEY'] = "Soban_MKT"

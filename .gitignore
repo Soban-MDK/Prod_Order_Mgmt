@@ -1,5 +1,7 @@
 dev_env
 .env
-backend
-frontend
+Extras
+Extras/backend
+Extras/frontend
 App/__pycache__
+test.ipynb
