@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+<div class="form-container sign-in-container">
+    <form action="#">
+        <h1>Welcome to Home</h1>
+        <p>Explore the features of this application.</p>
+    </form>
+</div>
+<div class="overlay-container">
+    <div class="overlay">
+        <div class="overlay-panel overlay-right">
+            <h1>Get Started</h1>
+            <p>Click below to sign up or sign in.</p>
+            <a href="/signup"><button class="ghost">Sign Up</button></a>
+            <a href="/signin"><button class="ghost">Sign In</button></a>
+        </div>
+    </div>
+</div>
+{% endblock %}
