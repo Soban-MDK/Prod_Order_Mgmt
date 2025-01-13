@@ -5,7 +5,7 @@
 {% block content %}
 <div class="container right-panel-active" id="container">
     <div class="form-container sign-up-container">
-        <form method="POST">
+        <form method="POST" id="signupForm">
             {{ form.hidden_tag() }}
             <h1>Create Account</h1>
             <div class="social-container">
@@ -14,18 +14,19 @@
                 <a href="#" class="social"><i class="fab fa-linkedin-in"></i></a>
             </div>
             <span>or use your email for registration</span>
-            <div>
+            <div class="form-group">
                 {{ form.name(class="form-control", placeholder="Name", size=32) }}
+                <span class="error" id="nameError"></span>
             </div>
-
-            <div>
+            <div class="form-group">
                 {{ form.email(class="form-control", placeholder="Email", size=32) }}
+                <span class="error" id="emailError"></span>
             </div>
-            
-            <div>
+            <div class="form-group">
                 {{ form.password(class="form-control", placeholder="Password", size=32) }}
+                <span class="error" id="passwordError"></span>
             </div>
-            <button class="button">{{ form.submit.label.text }}</button>
+            <button type="submit" class="button">Sign Up</button>
         </form>
     </div>
     <div class="overlay-container">
@@ -33,9 +34,47 @@
             <div class="overlay-panel overlay-left">
                 <h1>Welcome Back!</h1>
                 <p>To keep connected with us please login with your personal info</p>
-                <a href="{{ url_for('main.signin') }}"><button class="ghost">Sign In</button></a>
+                <a href="{{ url_for('main.signin') }}"><button type="button" class="ghost">Sign In</button></a>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+document.getElementById('signupForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    
+    try {
+        const response = await fetch('/signup', {
+            method: 'POST',
+            body: formData,
+            credentials: 'same-origin'
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            window.location.href = '/protected';
+        } else {
+            // Clear previous errors
+            document.querySelectorAll('.error').forEach(el => el.textContent = '');
+            
+            if (data.errors) {
+                Object.entries(data.errors).forEach(([field, errors]) => {
+                    const errorElement = document.getElementById(`${field}Error`);
+                    if (errorElement) {
+                        errorElement.textContent = errors[0];
+                    }
+                });
+            } else {
+                alert(data.message || 'An error occurred');
+            }
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('An error occurred while signing up');
+    }
+});
+</script>
 {% endblock %}

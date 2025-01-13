@@ -1,0 +1,103 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+}
+
+nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 30px;
+    background-color: #ffffff;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+}
+
+.logo img {
+    height: 100px;
+    margin-right: 10px;
+}
+
+.nav-items {
+    display: flex;
+    gap: 60px;
+    list-style: none;
+}
+
+.nav-items a {
+    text-decoration: none;
+    font-size: 24px;
+    font-weight: 500;
+    color: #333; /* Mat black color */
+    position: relative;
+}
+
+.nav-items a::after {
+    content: '';
+    position: absolute;
+    width: 10%;
+    height: 2px;
+    background-color: #F78055;
+    left: 45%;
+    bottom: -5px;
+    transition: all 0.3s ease-in-out;
+    opacity: 0;
+}
+
+.nav-items a:hover::after,
+.nav-items a.active::after {
+    width: 100%;
+    left: 0;
+    opacity: 1;
+}
+
+.nav-items a:hover,
+.nav-items a.active {
+    color: #F78055;
+}
+
+.auth-section {
+    display: flex;
+    gap: 30px;
+}
+
+.auth-section a {
+    /* to make the buttons bigger we can increase the padding */
+
+    text-decoration: none;
+    font-size: 24px;
+    font-weight: 600;
+    color: #333;
+    padding: 10px 30px;
+    border: 1px solid #333;
+    border-radius: 20px;
+    transition: all 0.3s ease-in-out;
+}
+
+.auth-section a:hover {
+    background-color: #F78055;
+    color: #fff;
+    border-color: #F78055;
+}
+
+.profile {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.profile img {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    object-fit: cover;
+}

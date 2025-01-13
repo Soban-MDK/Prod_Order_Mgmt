@@ -300,3 +300,24 @@ button:active {
     background-color: #f8d7da;
     color: #721c24;
 }
+
+/* Add this to your existing CSS */
+.error {
+    color: #ff3860;
+    font-size: 0.8rem;
+    display: block;
+    margin-top: 5px;
+}
+
+.form-group {
+    margin-bottom: 15px;
+    width: 100%;
+}
+
+.form-control {
+    width: 100%;
+    padding: 12px 15px;
+    margin: 8px 0;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
