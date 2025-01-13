@@ -2,6 +2,11 @@
 
 {% block title %}Sign In{% endblock %}
 
+{% block head %}
+{{ super() }}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/toast.css') }}">
+{% endblock %}
+
 {% block content %}
 <div class="container" id="container">
     <div class="form-container sign-in-container">
@@ -37,7 +42,24 @@
     </div>
 </div>
 
+<div id="toast" class="toast"></div>
+
 <script>
+function showToast(message, type) {
+    const toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.className = `toast ${type}`;
+    
+    // Trigger reflow
+    toast.offsetHeight;
+    
+    toast.classList.add('show');
+    
+    setTimeout(() => {
+        toast.classList.remove('show');
+    }, 3000);
+}
+
 document.getElementById('signinForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const formData = new FormData(e.target);
@@ -52,7 +74,16 @@ document.getElementById('signinForm').addEventListener('submit', async (e) => {
         const data = await response.json();
         
         if (response.ok) {
-            window.location.href = '/protected';
+            // Store token in localStorage
+            localStorage.setItem('auth_token', data.token);
+            
+            // Show success message
+            showToast(data.message, 'success');
+            
+            // Wait for toast animation before redirecting
+            setTimeout(() => {
+                window.location.href = data.redirect;
+            }, 1500);
         } else {
             // Clear previous errors
             document.querySelectorAll('.error').forEach(el => el.textContent = '');
@@ -65,12 +96,12 @@ document.getElementById('signinForm').addEventListener('submit', async (e) => {
                     }
                 });
             } else {
-                alert(data.message || 'An error occurred');
+                showToast(data.message || 'An error occurred', 'error');
             }
         }
     } catch (error) {
         console.error('Error:', error);
-        alert('An error occurred while signing in');
+        showToast('An error occurred while signing in', 'error');
     }
 });
 </script>

@@ -3,16 +3,16 @@ from .forms import SigninForm, SignupForm
 from .models import User, db
 from flask_bcrypt import Bcrypt
 from .auth_decorators import generate_token
+from flask_wtf.csrf import CSRFProtect
 
 main = Blueprint('main', __name__)
 bcrypt = Bcrypt()
+csrf = CSRFProtect()
 
-# Home route
 @main.route('/')
 def home():
     return render_template('base.html', title='Home')
 
-# Route to render the signup page
 @main.route('/signup', methods=['GET', 'POST'])
 def signup():
     form = SignupForm()
@@ -34,22 +34,40 @@ def signup():
 
     return render_template('signup.html', form=form)
 
-# Route to render the signin page
 @main.route('/signin', methods=['GET', 'POST'])
-# Exempt this route from CSRF protection
-@csrf.exempt
+@csrf.exempt  # Exempt this route from CSRF protection
 def signin():
-    form = SigninForm()
+    if request.method == 'POST':
+        # Handle both JSON and form data
+        data = request.get_json() if request.is_json else request.form
+        
+        email = data.get('email')
+        password = data.get('password')
 
-    if request.method == 'POST' and form.validate_on_submit():
-        user = User.query.filter_by(email=form.email.data).first()
+        if not email or not password:
+            return jsonify({
+                'status': 'error',
+                'message': 'Email and password are required'
+            }), 400
 
-        if user and bcrypt.check_password_hash(user.password, form.password.data):
+        user = User.query.filter_by(email=email).first()
+
+        if user and bcrypt.check_password_hash(user.password, password):
             token = generate_token(user.id)
-            response = make_response(redirect(url_for('main.home')))
+            response = jsonify({
+                'status': 'success',
+                'message': 'Login successful!',
+                'token': token,
+                'redirect': url_for('main.home')
+            })
             response.set_cookie('access_token', token, httponly=True, max_age=7*60*60)
             return response
 
-        return render_template('signin.html', form=form, error='Invalid email or password')
+        return jsonify({
+            'status': 'error',
+            'message': 'Invalid email or password'
+        }), 401
 
+    # GET request - render the form
+    form = SigninForm()
     return render_template('signin.html', form=form)
