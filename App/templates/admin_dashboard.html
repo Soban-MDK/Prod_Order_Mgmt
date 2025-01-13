@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="admin-dashboard">
+    <h1>Welcome, {{ admin.admin_name }}!</h1>
+    <p>You are logged in as an administrator.</p>
+    <div class="admin-actions">
+        <button onclick="logout()" class="button">Logout</button>
+    </div>
+</div>
+
+<style>
+.admin-dashboard {
+    max-width: 800px;
+    margin: 50px auto;
+    padding: 20px;
+    text-align: center;
+}
+
+.admin-actions {
+    margin-top: 20px;
+}
+
+.button {
+    padding: 10px 20px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.button:hover {
+    background-color: #45a049;
+}
+</style>
+
+<script>
+function logout() {
+    localStorage.removeItem('admin_token');
+    document.cookie = 'access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    window.location.href = '/admin/signin';
+}
+</script>
+{% endblock %}

@@ -18,3 +18,8 @@ class SigninForm(FlaskForm):
     email = StringField('Email', validators=[DataRequired(), Email()])
     password = PasswordField('Password', validators=[DataRequired(), Length(min=7, max=15)])
     submit = SubmitField('Sign In')
+
+class AdminSigninForm(FlaskForm):
+    admin_email = StringField('Email', validators=[DataRequired(), Email()])
+    password = PasswordField('Password', validators=[DataRequired(), Length(min=7, max=15)])
+    submit = SubmitField('Sign In')
