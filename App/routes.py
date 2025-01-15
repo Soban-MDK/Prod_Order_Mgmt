@@ -1,22 +1,34 @@
-# Routes.py
-from flask import Blueprint, render_template, request, jsonify, make_response, redirect, url_for
-from .forms import SigninForm, SignupForm, AdminSigninForm
-from .models import User, db, Admin
+import os
+import json
+import jwt
+from werkzeug.utils import secure_filename
+from flask import Blueprint, render_template, request, jsonify, make_response, redirect, url_for, current_app, flash
+from .forms import SigninForm, SignupForm, AdminSigninForm, ProductForm
+from functools import wraps
+from .models import User, db, Admin, Product
 from flask_bcrypt import Bcrypt
 from .auth_decorators import generate_token
 from flask_wtf.csrf import CSRFProtect
 from .auth_decorators import token_required
 
 # The Blueprint object is created with the name 'main' to represent the main routes of the application.
-main = Blueprint('main', __name__)
+main = Blueprint('main', __name__) 
 
 bcrypt = Bcrypt()
 csrf = CSRFProtect()
 
+UPLOAD_FOLDER = 'App/static/uploads'
+ALLOWED_EXTENSIONS = {'png', 'jpeg', 'webp'}
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+# Home Route
 @main.route('/')
 def home():
     return render_template('base.html', title='Home')
 
+# Signup Route
 @main.route('/signup', methods=['GET', 'POST'])
 def signup():
     form = SignupForm()
@@ -38,6 +50,8 @@ def signup():
     # Render the form on GET request
     return render_template('signup.html', form=form)
 
+
+# Signin Route
 @main.route('/signin', methods=['GET', 'POST'])
 @csrf.exempt  # Exempt this route from CSRF protection
 def signin():
@@ -76,6 +90,28 @@ def signin():
     form = SigninForm()
     return render_template('signin.html', form=form)
 
+
+# Function to check if the admin is logged in
+def admin_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        token = request.cookies.get('access_token')
+        if not token:
+            return redirect(url_for('main.admin_signin'))
+
+        try:
+            data = jwt.decode(token, current_app.config['SECRET_KEY'], algorithms=['HS256'])
+            admin = Admin.query.get(data['user_id'])
+            if not admin:
+                return redirect(url_for('main.admin_signin'))
+        except:
+            return redirect(url_for('main.admin_signin'))
+
+        return f(*args, **kwargs)
+    return decorated
+
+
+# Admin Signin Route
 @main.route('/admin/signin', methods=['GET', 'POST'])
 @csrf.exempt
 def admin_signin():
@@ -91,17 +127,8 @@ def admin_signin():
                 'message': 'Email and password are required'
             }), 400
 
-        # Can I get the link to the database and check if the admin table exists or not? The answer is yes.
-        # This can be done by using the db object from the models.py file.
-
-        admin = db.Table('admin', db.metadata, autoload=True, autoload_with=db.engine)
-        print("Soban")
-        print(admin)
-
-        # Find the admin by email
         admin = Admin.query.filter_by(admin_email=admin_email).first()
 
-        # Using bcrypt to check the hashed password
         if admin and bcrypt.check_password_hash(admin.password, password):
             token = generate_token(admin.admin_id)
             response = jsonify({
@@ -123,10 +150,99 @@ def admin_signin():
 
 
 
+# Admin Dashboard Route
 @main.route('/admin/dashboard')
 @token_required
 def admin_dashboard(user_id):
+    """Admin dashboard with two buttons."""
     admin = Admin.query.get(user_id)
     if not admin:
         return jsonify({'message': 'Not authorized as admin!'}), 403
     return render_template('admin_dashboard.html', admin=admin)
+
+
+@main.route('/manage_products', methods=['GET'])
+@token_required
+def manage_products(user_id):
+    """Display all products and provide options to add, edit, and delete."""
+    products = Product.query.all()
+    return render_template('manage_products.html', products=products)
+
+
+@main.route('/add_product', methods=['GET', 'POST'])
+@token_required
+def add_product(user_id):
+    """Add new product functionality."""
+    form = ProductForm()
+    if request.method == 'POST':
+        if form.validate_on_submit():
+            images = []
+            for file in request.files.getlist('images'):
+                if file and allowed_file(file.filename):
+                    filename = secure_filename(file.filename)
+                    file.save(os.path.join(UPLOAD_FOLDER, filename))
+                    images.append(filename)
+            
+            new_product = Product(
+                name=form.name.data,
+                ws_code=form.ws_code.data,
+                price=form.price.data,
+                mrp=form.mrp.data,
+                package_size=form.package_size.data,
+                images=json.dumps(images),
+                tags=json.dumps([tag.strip() for tag in form.tags.data.split(',')]),
+                category=form.category.data
+            )
+            db.session.add(new_product)
+            db.session.commit()
+            flash('Product added successfully!', 'success')
+            return redirect(url_for('main.manage_products'))
+        else:
+            return render_template('add_product.html', form=form, errors=form.errors)
+    
+    return render_template('add_product.html', form=form)
+
+
+@main.route('/edit_product/<int:id>', methods=['GET', 'POST'])
+@token_required
+def edit_product(user_id, id):
+    """Edit existing product."""
+    product = Product.query.get_or_404(id)
+    form = ProductForm(obj=product)
+    
+    if request.method == 'POST' and form.validate_on_submit():
+        product.name = form.name.data
+        product.ws_code = form.ws_code.data
+        product.price = form.price.data
+        product.mrp = form.mrp.data
+        product.package_size = form.package_size.data
+        product.tags = json.dumps([tag.strip() for tag in form.tags.data.split(',')])
+        product.category = form.category.data
+        
+        if form.images.data:
+            images = []
+            for file in request.files.getlist('images'):
+                if file and allowed_file(file.filename):
+                    filename = secure_filename(file.filename)
+                    file.save(os.path.join(UPLOAD_FOLDER, filename))
+                    images.append(filename)
+            product.images = json.dumps(images)
+        
+        db.session.commit()
+        flash('Product updated successfully!', 'success')
+        return redirect(url_for('main.manage_products'))
+    
+    return render_template('edit_product.html', form=form, product=product)
+
+
+@main.route('/delete_product/<int:id>', methods=['POST'])
+@token_required
+
+def delete_product(user_id, id):
+    """Delete a product."""
+    product = Product.query.get_or_404(id)
+    db.session.delete(product)
+    db.session.commit()
+    flash('Product deleted successfully!', 'success')
+    return redirect(url_for('main.manage_products'))
+

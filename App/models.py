@@ -19,3 +19,17 @@ class Admin(db.Model):
 
     def __repr__(self):
         return f'<Admin {self.admin_email}>'
+
+class Product(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    ws_code = db.Column(db.String(50), nullable=False, unique=True)
+    price = db.Column(db.Float, nullable=False)
+    mrp = db.Column(db.Float, nullable=False)
+    package_size = db.Column(db.Integer, nullable=False)
+    images = db.Column(db.JSON, nullable=False)  # Store image file names as JSON
+    tags = db.Column(db.JSON, nullable=True)  # Store tags as JSON
+    category = db.Column(db.String(50), nullable=False)
+
+    def __repr__(self):
+        return f'<Product {self.name}>'

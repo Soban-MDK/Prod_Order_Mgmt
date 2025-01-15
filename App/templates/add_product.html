@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <div class="container mt-5">
+        <h2>Add Product</h2>
+        <form method="POST" enctype="multipart/form-data">
+            {{ form.hidden_tag() }}
+            
+            <div class="form-group">
+                <label for="name">Product Name</label>
+                {{ form.name(class="form-control") }}
+                {% if form.name.errors %}
+                    <div class="text-danger">
+                        {% for error in form.name.errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="ws_code">WS Code</label>
+                {{ form.ws_code(class="form-control") }}
+                {% if form.ws_code.errors %}
+                    <div class="text-danger">
+                        {% for error in form.ws_code.errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="price">Sales Price</label>
+                {{ form.price(class="form-control") }}
+                {% if form.price.errors %}
+                    <div class="text-danger">
+                        {% for error in form.price.errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="mrp">MRP</label>
+                {{ form.mrp(class="form-control") }}
+                {% if form.mrp.errors %}
+                    <div class="text-danger">
+                        {% for error in form.mrp.errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="package_size">Package Size</label>
+                {{ form.package_size(class="form-control") }}
+                {% if form.package_size.errors %}
+                    <div class="text-danger">
+                        {% for error in form.package_size.errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="tags">Tags (comma separated)</label>
+                {{ form.tags(class="form-control") }}
+                {% if form.tags.errors %}
+                    <div class="text-danger">
+                        {% for error in form.tags.errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="category">Category</label>
+                {{ form.category(class="form-control") }}
+                {% if form.category.errors %}
+                    <div class="text-danger">
+                        {% for error in form.category.errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="images">Product Images</label>
+                {{ form.images(class="form-control") }}
+                {% if form.images.errors %}
+                    <div class="text-danger">
+                        {% for error in form.images.errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <button type="submit" class="btn btn-primary">Save Product</button>
+        </form>
+    </div>
+{% endblock %}
