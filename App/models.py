@@ -33,3 +33,9 @@ class Product(db.Model):
 
     def __repr__(self):
         return f'<Product {self.name}>'
+
+class TokenBlocklist(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    jti = db.Column(db.String(36), nullable=False, unique=True)
+    type = db.Column(db.String(10), nullable=False)  # 'user' or 'admin'
+    created_at = db.Column(db.DateTime, nullable=False)
