@@ -6,11 +6,12 @@ from flask import Blueprint, render_template, request, jsonify, make_response, r
 from .forms import SigninForm, SignupForm, AdminSigninForm, ProductForm
 from functools import wraps
 from flask_wtf import FlaskForm
-from .models import User, db, Admin, Product
+from .models import User, db, Admin, Product, CartItem, Order, OrderItem
 from flask_bcrypt import Bcrypt
 from .auth_decorators import generate_token
 from flask_wtf.csrf import CSRFProtect
 from .auth_decorators import token_required, admin_required
+from flask_login import login_user
 
 # The Blueprint object is created with the name 'main' to represent the main routes of the application.
 main = Blueprint('main', __name__) 
@@ -42,7 +43,7 @@ def save_product_images(files, ws_code):
 # Home Route
 @main.route('/')
 def home():
-    return render_template('base.html', title='Home')
+    return render_template('home.html', title='Home')
 
 # Signup Route
 @main.route('/signup', methods=['GET', 'POST'])
@@ -67,12 +68,11 @@ def signup():
     return render_template('signup.html', form=form)
 
 
-# Signin Route
+
 @main.route('/signin', methods=['GET', 'POST'])
-@csrf.exempt  # Exempt this route from CSRF protection
+@csrf.exempt
 def signin():
     if request.method == 'POST':
-        # Handle both JSON and form data
         data = request.get_json() if request.is_json else request.form
         
         email = data.get('email')
@@ -87,6 +87,7 @@ def signin():
         user = User.query.filter_by(email=email).first()
 
         if user and bcrypt.check_password_hash(user.password, password):
+            login_user(user)  # Add this line
             token = generate_token(user.id)
             response = jsonify({
                 'status': 'success',
@@ -102,10 +103,8 @@ def signin():
             'message': 'Invalid email or password'
         }), 401
 
-    # GET request - render the form
     form = SigninForm()
     return render_template('signin.html', form=form)
-
 
 
 # Admin Signin Route - Updated with proper token generation
@@ -310,3 +309,109 @@ def get_product_images(user_id, id):
         ]
         return jsonify({'images': image_urls})
     return jsonify({'images': []})
+
+@main.route('/products')
+def products():
+    """Display products for customers with search and pagination."""
+    search = request.args.get('search', '')
+    page = request.args.get('page', 1, type=int)
+    per_page = 12  # Show 12 products per page
+    
+    query = Product.query
+    if search:
+        query = query.filter(
+            db.or_(
+                Product.name.ilike(f'%{search}%'),
+                Product.ws_code.ilike(f'%{search}%')
+            )
+        )
+    
+    products = query.order_by(Product.name).paginate(
+        page=page, per_page=per_page, error_out=False
+    )
+    
+    return render_template('customer/products.html', products=products, search=search)
+
+@main.route('/cart')
+@token_required
+def view_cart(user_id):
+    """View cart contents."""
+    cart_items = CartItem.query.filter_by(user_id=user_id).all()
+    total = sum(item.quantity * item.product.price for item in cart_items)
+    return render_template('customer/cart.html', cart_items=cart_items, total=total)
+
+@main.route('/cart/update', methods=['POST'])
+@token_required
+def update_cart(user_id):
+    """Update cart item quantity."""
+    data = request.get_json()
+    ws_code = data.get('ws_code')
+    quantity = data.get('quantity')
+    
+    cart_item = CartItem.query.filter_by(
+        user_id=user_id, ws_code=ws_code
+    ).first()
+    
+    if not cart_item:
+        return jsonify({'error': 'Cart item not found'}), 404
+    
+    try:
+        if quantity > 0:
+            cart_item.quantity = quantity
+        else:
+            db.session.delete(cart_item)
+        db.session.commit()
+        return jsonify({'message': 'Cart updated'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@main.route('/order/place', methods=['POST'])
+@token_required
+def place_order(user_id):
+    cart_items = CartItem.query.filter_by(user_id=user_id).all()
+    if not cart_items:
+        return jsonify({'error': 'Cart is empty'}), 400
+    
+    total_amount = sum(item.quantity * item.product.price for item in cart_items)
+    
+    try:
+        # Check stock availability
+        for cart_item in cart_items:
+            product = Product.query.filter_by(ws_code=cart_item.ws_code).first()
+            if product.quantity_in_stock < cart_item.quantity:
+                return jsonify({
+                    'error': f'Insufficient stock for {product.name}. Available: {product.quantity_in_stock}'
+                }), 400
+
+        # Create order
+        order = Order(
+            user_id=user_id,
+            total_amount=total_amount
+        )
+        db.session.add(order)
+        
+        # Create order items and update stock
+        for cart_item in cart_items:
+            product = Product.query.filter_by(ws_code=cart_item.ws_code).first()
+            order_item = OrderItem(
+                order=order,
+                ws_code=cart_item.ws_code,
+                quantity=cart_item.quantity,
+                price=cart_item.product.price
+            )
+            # Decrease product quantity
+            product.quantity_in_stock -= cart_item.quantity
+            
+            db.session.add(order_item)
+            db.session.delete(cart_item)
+        
+        db.session.commit()
+        return jsonify({
+            'message': 'Order placed successfully',
+            'order_id': order.id
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+

@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <div class="search-section">
+        <form method="GET" action="{{ url_for('main.products') }}" class="search-form">
+            <input 
+                type="text" 
+                name="search" 
+                value="{{ search }}" 
+                placeholder="Search products by name or WS code..."
+                class="search-input"
+            >
+            <button type="submit" class="search-button">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            </button>
+        </form>
+    </div>
+
+    <div class="products-grid">
+        {% for product in products.items %}
+            <div class="product-card">
+                <div class="product-image">
+                    {% if product.images %}
+                        <img src="{{ url_for('static', filename='uploads/' + product.ws_code + '/' + (product.images|from_json)[0]) }}" alt="{{ product.name }}">
+                    {% else %}
+                        <div class="no-image">No Image Available</div>
+                    {% endif %}
+                </div>
+                <div class="product-info">
+                    <h3>{{ product.name }}</h3>
+                    <p class="ws-code">WS Code: {{ product.ws_code }}</p>
+                    <p class="price">₹{{ product.price }} <span class="mrp">MRP: ₹{{ product.mrp }}</span></p>
+                    <p class="package-size">Pack: {{ product.package_size }} units</p>
+                    {% if current_user.is_authenticated %}
+                        <div class="add-to-cart">
+                            <input type="number" min="1" value="1" class="quantity-input" data-ws-code="{{ product.ws_code }}">
+                            <button class="add-to-cart-btn" data-ws-code="{{ product.ws_code }}">
+                                Add to Cart
+                            </button>
+                        </div>
+                    {% else %}
+                        <a href="{{ url_for('main.signin') }}" class="signin-to-buy">Sign in to buy</a>
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+    {% if products.pages > 1 %}
+        <div class="pagination">
+            {% if products.has_prev %}
+                <a href="{{ url_for('main.products', page=products.prev_num, search=search) }}" class="page-link">Previous</a>
+            {% endif %}
+            
+            {% for page_num in products.iter_pages(left_edge=2, left_current=2, right_current=3, right_edge=2) %}
+                {% if page_num %}
+                    {% if page_num == products.page %}
+                        <span class="page-link active">{{ page_num }}</span>
+                    {% else %}
+                        <a href="{{ url_for('main.products', page=page_num, search=search) }}" class="page-link">{{ page_num }}</a>
+                    {% endif %}
+                {% else %}
+                    <span class="page-link dots">...</span>
+                {% endif %}
+            {% endfor %}
+            
+            {% if products.has_next %}
+                <a href="{{ url_for('main.products', page=products.next_num, search=search) }}" class="page-link">Next</a>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+
+<script>
+document.querySelectorAll('.add-to-cart-btn').forEach(button => {
+    button.addEventListener('click', async function() {
+        const wsCode = this.dataset.wsCode;
+        const quantityInput = document.querySelector(`.quantity-input[data-ws-code="${wsCode}"]`);
+        const quantity = parseInt(quantityInput.value);
+
+        try {
+            const response = await fetch('/cart/add', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    ws_code: wsCode,
+                    quantity: quantity
+                })
+            });
+
+            const data = await response.json();
+            if (response.ok) {
+                // Show success message
+                alert('Product added to cart!');
+                // Update cart count
+                updateCartCount();
+            } else {
+                alert(data.error || 'Error adding to cart');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error adding to cart');
+        }
+    });
+});
+
+async function updateCartCount() {
+    try {
+        const response = await fetch('/cart/count');
+        const data = await response.json();
+        document.querySelector('.cart-count').textContent = data.count;
+    } catch (error) {
+        console.error('Error updating cart count:', error);
+    }
+}
+</script>
+{% endblock %}

@@ -10,11 +10,45 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 </head>
 <body>
-    <div class="container" id="container">
+
+    <nav class="navbar">
+        <div class="logo">
+            <a href="{{ url_for('main.home') }}">
+                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo">
+            </a>
+        </div>
+        <ul class="nav-items">
+            <li><a href="{{ url_for('main.home') }}" class="{{ 'active' if request.endpoint == 'main.home' }}">Home</a></li>
+            <li><a href="{{ url_for('main.products') }}" class="{{ 'active' if request.endpoint == 'main.products' }}">Products</a></li>
+            <li><a href="#about">About</a></li>
+            <li><a href="#why-generic">Why Generic</a></li>
+            <li><a href="#contact">Contact</a></li>
+        </ul>
+        <div class="auth-section">
+            {% if current_user.is_authenticated %}
+                <a href="{{ url_for('main.view_cart') }}" class="cart-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+                    <span class="cart-count">0</span>
+                </a>
+                <div class="profile-dropdown">
+                    <img src="{{ url_for('static', filename='images/profile.jpg') }}" alt="Profile">
+                    <span>{{ current_user.name }}</span>
+                    <div class="dropdown-content">
+                        <a href="{{ url_for('main.view_cart') }}">Cart</a>
+                        <a href="#orders">My Orders</a>
+                        <a href="{{ url_for('main.signin') }}">Logout</a>
+                    </div>
+                </div>
+            {% else %}
+                <a href="{{ url_for('main.signin') }}">Sign In</a>
+                <a href="{{ url_for('main.signup') }}">Sign Up</a>
+            {% endif %}
+        </div>
+    </nav>
+
         {% block content %}
         <!-- Content from child templates will be inserted here -->
         {% endblock %}
-    </div>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
@@ -31,3 +65,4 @@
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </body>
 </html>
+

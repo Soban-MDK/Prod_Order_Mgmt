@@ -13,7 +13,7 @@ body {
     align-items: center;
     flex-direction: column;
     font-family: 'Montserrat', sans-serif;
-    min-height: 100vh;
+    min-height: 10vh;
     margin: 0;  /* Remove the negative margin */
     padding: 20px;  /* Add padding instead */
     width: 100%;
@@ -92,6 +92,7 @@ input {
 }
 
 .container {
+    display: block;
     background-color: #fff;
     border-radius: 10px;
     box-shadow: 0 14px 28px rgba(0,0,0,0.25), 
@@ -334,4 +335,114 @@ button:active {
     form {
         padding: 0 3%;
     }
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+}
+
+nav {
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.25% 4%;
+    background-color: #ffffff;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+    /* Even on scrolling the navbar must be fixed */
+    position: fixed;
+    width: 100%;
+    z-index: 1000;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+}
+
+.logo img {
+    height: 100px;
+    margin-right: 10px;
+}
+
+.nav-items {
+    display: flex;
+    gap: 5em;
+    list-style: none;
+}
+
+.nav-items a {
+    text-decoration: none;
+    font-size: 24px;
+    font-weight: 500;
+    color: #333; /* Mat black color */
+    position: relative;
+}
+
+.nav-items a::after {
+    content: '';
+    position: absolute;
+    width: 10%;
+    height: 2px;
+    background-color: #F78055;
+    left: 45%;
+    bottom: -5px;
+    transition: all 0.3s ease-in-out;
+    opacity: 0;
+}
+
+.nav-items a:hover::after,
+.nav-items a.active::after {
+    width: 100%;
+    left: 0;
+    opacity: 1;
+}
+
+.nav-items a:hover,
+.nav-items a.active {
+    color: #F78055;
+}
+
+.auth-section {
+    display: flex;
+    gap: 30px;
+}
+
+.auth-section a {
+    /* to make the buttons bigger we can increase the padding */
+
+    text-decoration: none;
+    font-size: 24px;
+    font-weight: 600;
+    color: #333;
+    padding: 6px 20px;
+    border: 1px solid #333;
+    border-radius: 20px;
+    transition: all 0.3s ease-in-out;
+}
+
+.auth-section a:hover {
+    background-color: #F78055;
+    color: #fff;
+    border-color: #F78055;
+}
+
+.profile {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.profile img {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    object-fit: cover;
 }
