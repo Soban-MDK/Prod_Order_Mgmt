@@ -5,7 +5,6 @@ from .models import User, Product
 from werkzeug.utils import secure_filename
 import os
 
-
 class SignupForm(FlaskForm):
     name = StringField('Name', validators=[DataRequired(), Length(min=2, max=20)])
     email = StringField('Email', validators=[DataRequired(), Email()])
@@ -49,6 +48,10 @@ class ProductForm(FlaskForm):
     package_size = IntegerField('Package Size', validators=[
         DataRequired(),
         NumberRange(min=1, message="Package size must be greater than 0")
+    ])
+    quantity_in_stock = IntegerField('Quantity in Stock', validators=[
+        DataRequired(),
+        NumberRange(min=0, message="Quantity must be greater than or equal to 0")
     ])
     tags = StringField('Tags (comma separated)', validators=[
         DataRequired(),
