@@ -1,3 +1,4 @@
+# Routes.py
 from flask import Blueprint, render_template, request, jsonify, make_response, redirect, url_for
 from .forms import SigninForm, SignupForm, AdminSigninForm
 from .models import User, db, Admin
@@ -6,7 +7,9 @@ from .auth_decorators import generate_token
 from flask_wtf.csrf import CSRFProtect
 from .auth_decorators import token_required
 
+# The Blueprint object is created with the name 'main' to represent the main routes of the application.
 main = Blueprint('main', __name__)
+
 bcrypt = Bcrypt()
 csrf = CSRFProtect()
 
@@ -17,22 +20,22 @@ def home():
 @main.route('/signup', methods=['GET', 'POST'])
 def signup():
     form = SignupForm()
-
-    if request.method == 'POST' and form.validate_on_submit():
-        hashed_password = bcrypt.generate_password_hash(form.password.data).decode('utf-8')
-        new_user = User(name=form.name.data, email=form.email.data, password=hashed_password)
-
-        try:
-            db.session.add(new_user)
-            db.session.commit()
-            token = generate_token(new_user.id)
-            response = make_response(redirect(url_for('main.home')))
-            response.set_cookie('access_token', token, httponly=True, max_age=7*60*60)
-            return response
-        except Exception as e:
-            db.session.rollback()
-            return render_template('signup.html', form=form, error=str(e))
-
+    if request.method == 'POST':
+        if form.validate_on_submit():
+            hashed_password = bcrypt.generate_password_hash(form.password.data).decode('utf-8')
+            new_user = User(name=form.name.data, email=form.email.data, password=hashed_password)
+            try:
+                db.session.add(new_user)
+                db.session.commit()
+                token = generate_token(new_user.id)
+                return jsonify({'status': 'success', 'message': 'Account created successfully!', 'redirect': url_for('main.home')}), 200
+            except Exception as e:
+                db.session.rollback()
+                return jsonify({'status': 'error', 'message': str(e)}), 500
+        else:
+            return jsonify({'status': 'error', 'errors': form.errors}), 400
+    
+    # Render the form on GET request
     return render_template('signup.html', form=form)
 
 @main.route('/signin', methods=['GET', 'POST'])
