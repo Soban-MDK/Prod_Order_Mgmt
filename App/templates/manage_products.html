@@ -1,22 +1,37 @@
-{# manage_products.html #}
 {% extends 'base.html' %}
 
 {% block content %}
-    <div class="container mt-5">
+<div class="container">
+    <div class="header-actions">
         <h2>Manage Products</h2>
-        <div class="mb-3">
-            <a href="{{ url_for('main.add_product') }}" class="btn btn-primary">Add New Product</a>
-        </div>
-        
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ category }}">{{ message }}</div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-        
-        <table class="table table-striped">
+        <a href="{{ url_for('main.add_product') }}" class="add-btn">Add New Product</a>
+    </div>
+
+    <!-- Search Form -->
+    <form method="GET" action="{{ url_for('main.manage_products') }}" class="search-container">
+        <input 
+            type="text" 
+            name="search" 
+            value="{{ search }}" 
+            placeholder="Search by product name or WS code..."
+            class="search-input"
+        >
+        <button type="submit" class="search-button">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        </button>
+    </form>
+
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+    
+    <div class="table-container">
+        <table>
             <thead>
                 <tr>
                     <th>Product Name</th>
@@ -30,80 +45,278 @@
             </thead>
             <tbody>
                 {% for product in products.items %}
-                    <tr>
+                    <tr class="product-row" data-product-id="{{ product.id }}">
                         <td>{{ product.name }}</td>
                         <td>{{ product.ws_code }}</td>
                         <td>₹{{ product.price }}</td>
                         <td>₹{{ product.mrp }}</td>
                         <td>{{ product.package_size }}</td>
                         <td>{{ product.category }}</td>
-                        <td>
-                            <a href="{{ url_for('main.edit_product', id=product.id) }}" class="btn btn-warning btn-sm">Edit</a>
+                        <td class="actions">
+                            <a href="{{ url_for('main.edit_product', id=product.id) }}" class="icon-button edit-icon" title="Edit">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+                            </a>
                             <form action="{{ url_for('main.delete_product', id=product.id) }}" method="POST" class="d-inline">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this product?');">Delete</button>
+                                <button type="submit" class="icon-button delete-icon" title="Delete" onclick="return confirm('Are you sure you want to delete this product?')">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                            </button>
                             </form>
                         </td>
                     </tr>
                 {% endfor %}
             </tbody>
         </table>
+    </div>
 
-        {# Pagination Navigation #}
-        {% if products.total > products.per_page %}
-        <nav aria-label="Page navigation" class="mt-4">
-            <ul class="pagination justify-content-center">
-                {# Previous page #}
-                {% if products.has_prev %}
-                <li class="page-item">
-                    <a class="page-link" href="{{ url_for('main.manage_products', page=products.prev_num) }}">Previous</a>
-                </li>
-                {% else %}
-                <li class="page-item disabled">
-                    <span class="page-link">Previous</span>
-                </li>
-                {% endif %}
-
-                {# Page numbers #}
-                {% for page_num in products.iter_pages(left_edge=2, left_current=2, right_current=3, right_edge=2) %}
-                    {% if page_num %}
-                        {% if page_num == products.page %}
-                        <li class="page-item active">
-                            <span class="page-link">
-                                {{ page_num }}
-                                <span class="sr-only">(current)</span>
-                            </span>
-                        </li>
-                        {% else %}
-                        <li class="page-item">
-                            <a class="page-link" href="{{ url_for('main.manage_products', page=page_num) }}">{{ page_num }}</a>
-                        </li>
-                        {% endif %}
-                    {% else %}
-                        <li class="page-item disabled">
-                            <span class="page-link">...</span>
-                        </li>
-                    {% endif %}
-                {% endfor %}
-
-                {# Next page #}
-                {% if products.has_next %}
-                <li class="page-item">
-                    <a class="page-link" href="{{ url_for('main.manage_products', page=products.next_num) }}">Next</a>
-                </li>
-                {% else %}
-                <li class="page-item disabled">
-                    <span class="page-link">Next</span>
-                </li>
-                {% endif %}
-            </ul>
-        </nav>
+    <!-- Pagination -->
+    {% if products.total > products.per_page %}
+    <div class="pagination">
+        {% if products.has_prev %}
+            <a href="{{ url_for('main.manage_products', page=products.prev_num, search=search) }}" class="page-link">Previous</a>
         {% endif %}
+        
+        {% for page_num in products.iter_pages(left_edge=2, left_current=2, right_current=3, right_edge=2) %}
+            {% if page_num %}
+                {% if page_num == products.page %}
+                    <span class="page-link active">{{ page_num }}</span>
+                {% else %}
+                    <a href="{{ url_for('main.manage_products', page=page_num, search=search) }}" class="page-link">{{ page_num }}</a>
+                {% endif %}
+            {% else %}
+                <span class="page-link dots">...</span>
+            {% endif %}
+        {% endfor %}
+        
+        {% if products.has_next %}
+            <a href="{{ url_for('main.manage_products', page=products.next_num, search=search) }}" class="page-link">Next</a>
+        {% endif %}
+    </div>
+    {% endif %}
 
-        <div class="text-center mt-3">
-            <small class="text-muted">
-                Showing {{ products.items|length }} of {{ products.total }} products
-            </small>
+    <!-- Image Modal -->
+    <div id="imageModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <div class="image-gallery"></div>
         </div>
     </div>
+</div>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+.container {
+    padding: 20px;
+    font-family: BlinkMacSystemFont, -apple-system, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", "Helvetica", "Arial", sans-serif;
+}
+
+.search-container {
+    margin-bottom: 20px;
+    display: flex;
+    gap: 10px;
+    flex-direction: row;
+}
+
+.search-input {
+    display: inline;
+    flex: 1;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    width: 80%;
+    align-self:flex-start;
+}
+
+.search-button {
+    padding: 10px 15px;
+    background: #e38725;
+    border: none;
+    border-radius: 4px;
+    color: white;
+    cursor: pointer;
+    display: inline;
+}
+
+.header-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.add-btn {
+    padding: 10px 20px;
+    background: #e38725;
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+}
+
+table {
+    display: grid;
+    border-collapse: collapse;
+    min-width: 100%;
+    grid-template-columns: 
+        minmax(150px, 2fr)
+        minmax(100px, 1fr)
+        minmax(100px, 1fr)
+        minmax(100px, 1fr)
+        minmax(100px, 1fr)
+        minmax(100px, 1fr)
+        minmax(100px, 0.8fr);
+}
+
+thead,
+tbody,
+tr {
+    display: contents;
+}
+
+th,
+td {
+    padding: 15px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+th {
+    position: sticky;
+    top: 0;
+    background: #e38725;
+    text-align: left;
+    font-weight: normal;
+    font-size: 1.1rem;
+    color: white;
+}
+
+td {
+    padding-top: 10px;
+    padding-bottom: 10px;
+    color: #808080;
+}
+
+tr:nth-child(even) td {
+    background: #ded9d3;
+}
+
+.actions {
+    display: flex;
+    gap: 10px;
+}
+
+.icon-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 5px;
+}
+
+.edit-icon {
+    color: #4a90e2;
+}
+
+.delete-icon {
+    color: #e74c3c;
+}
+
+.pagination {
+    margin-top: 20px;
+    display: flex;
+    justify-content: center;
+    gap: 5px;
+}
+
+.page-link {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    text-decoration: none;
+    color: #e38725;
+}
+
+.page-link.active {
+    background: #e38725;
+    color: white;
+    border-color: #e38725;
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.7);
+}
+
+.modal-content {
+    position: relative;
+    background: white;
+    margin: 10% auto;
+    padding: 20px;
+    width: 80%;
+    max-width: 700px;
+}
+
+.close {
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    font-size: 24px;
+    cursor: pointer;
+}
+
+.image-gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 10px;
+}
+
+.image-gallery img {
+    width: 100%;
+    height: auto;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const modal = document.getElementById('imageModal');
+    const closeBtn = modal.querySelector('.close');
+    const imageGallery = modal.querySelector('.image-gallery');
+
+    document.querySelectorAll('.product-row').forEach(row => {
+        row.addEventListener('click', function(e) {
+            if (e.target.closest('.actions')) return;
+
+            const productId = this.dataset.productId;
+            
+            fetch(`/get_product_images/${productId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.images && data.images.length > 0) {
+                        imageGallery.innerHTML = data.images.map(image => 
+                            `<img src="${image}" alt="Product image">`
+                        ).join('');
+                        modal.style.display = 'block';
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+        });
+    });
+
+    closeBtn.onclick = function() {
+        modal.style.display = 'none';
+    }
+
+    window.onclick = function(e) {
+        if (e.target == modal) {
+            modal.style.display = 'none';
+        }
+    }
+});
+</script>
 {% endblock %}

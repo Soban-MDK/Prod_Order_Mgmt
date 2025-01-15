@@ -159,17 +159,36 @@ def admin_dashboard(user_id):
 
 
 @main.route('/manage_products')
-@admin_required  # Make sure this decorator is applied
+@admin_required
 def manage_products(user_id):
-    """Display all products with pagination."""
+    """Display all products with pagination and search."""
+    # Get search parameter
+    search = request.args.get('search', '')
     page = request.args.get('page', 1, type=int)
-    per_page = 10  # Number of products per page
+    per_page = 10
+
+    # Query with search filter
+    query = Product.query
+    if search:
+        query = query.filter(
+            db.or_(
+                Product.name.ilike(f'%{search}%'),
+                Product.ws_code.ilike(f'%{search}%')
+            )
+        )
     
-    products = Product.query\
-        .order_by(Product.id.desc())\
-        .paginate(page=page, per_page=per_page, error_out=False)
+    # Order and paginate
+    products = query.order_by(Product.id.desc()).paginate(
+        page=page, 
+        per_page=per_page, 
+        error_out=False
+    )
     
-    return render_template('manage_products.html', products=products)
+    return render_template(
+        'manage_products.html', 
+        products=products,
+        search=search
+    )
 
 
 @main.route('/add_product', methods=['GET', 'POST'])
@@ -245,20 +264,30 @@ def edit_product(user_id, id):
 
 
 
+# Update delete_product route to handle AJAX requests
 @main.route('/delete_product/<int:id>', methods=['POST'])
-@token_required
+@admin_required
 def delete_product(user_id, id):
-    """Delete a product."""
+    """Delete a product and its images."""
     if not request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-        
-        # For regular form submit, include CSRF token
         form = FlaskForm()
         if not form.validate():
             flash('CSRF validation failed', 'error')
             return redirect(url_for('main.manage_products'))
     
     product = Product.query.get_or_404(id)
+    
     try:
+        # Delete product images from filesystem
+        if product.images:
+            image_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], str(product.ws_code))
+            if os.path.exists(image_folder):
+                for image in json.loads(product.images):
+                    image_path = os.path.join(image_folder, image)
+                    if os.path.exists(image_path):
+                        os.remove(image_path)
+                os.rmdir(image_folder)
+        
         db.session.delete(product)
         db.session.commit()
         flash('Product deleted successfully!', 'success')
@@ -268,3 +297,16 @@ def delete_product(user_id, id):
     
     return redirect(url_for('main.manage_products'))
 
+@main.route('/get_product_images/<int:id>')
+@token_required
+def get_product_images(user_id, id):
+    """Get product images for modal display."""
+    product = Product.query.get_or_404(id)
+    if product.images:
+        images = json.loads(product.images)
+        image_urls = [
+            url_for('static', filename=f'uploads/{product.ws_code}/{image}')
+            for image in images
+        ]
+        return jsonify({'images': image_urls})
+    return jsonify({'images': []})
