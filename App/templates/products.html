@@ -167,6 +167,15 @@
     margin-left: 5px;
 }
 
+.search-input, .search-button{
+  display: inline;
+}
+
+.search-input{
+  max-width: 600px;
+}
+
+
 .out-of-stock {
     color: #e74c3c;
     font-weight: bold;
@@ -308,5 +317,45 @@
           modal.style.display = 'none';
       }
   }
+
+  document.querySelectorAll(".add-to-cart-btn").forEach((button) => {
+    button.addEventListener("click", async function() {
+        const wsCode = this.dataset.wsCode;
+        const quantityInput = document.querySelector(`.quantity-input[data-ws-code="${wsCode}"]`);
+        const quantity = parseInt(quantityInput.value);
+
+        try {
+            const response = await fetch('/cart/add', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({
+                    ws_code: wsCode,
+                    quantity: quantity
+                }),
+                credentials: 'same-origin'
+            });
+
+            const data = await response.json();
+            
+            if (response.ok) {
+                // Show success message
+                alert('Product added to cart successfully!');
+                
+                // Update cart count
+                const cartCountResponse = await fetch('/cart/count');
+                const cartData = await cartCountResponse.json();
+                document.querySelector('.cart-count').textContent = cartData.count;
+            } else {
+                throw new Error(data.error || 'Error adding to cart');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert(error.message || 'Error adding to cart');
+        }
+    });
+});
   </script>
 {% endblock %}

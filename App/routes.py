@@ -466,6 +466,9 @@ def add_to_cart(user_id):
         product = Product.query.filter_by(ws_code=ws_code).first()
         if not product:
             return jsonify({'error': 'Product not found'}), 404
+        if product.quantity_in_stock < quantity:
+            return jsonify({'error': 'Not enough stock'}), 400
+
         
         cart_item = CartItem.query.filter_by(
             user_id=current_user.id, ws_code=ws_code
