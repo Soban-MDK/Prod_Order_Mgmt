@@ -304,11 +304,13 @@ def delete_product(user_id, id):
     
     return redirect(url_for('main.manage_products'))
 
-@main.route('/get_product_images/<int:id>')
-@token_required
-def get_product_images(user_id, id):
-    """Get product images for modal display."""
-    product = Product.query.get_or_404(id)
+@main.route('/get_product_images/<ws_code>')
+def get_product_images(ws_code):
+    """Get product images based on WS code."""
+    product = Product.query.filter_by(ws_code=ws_code).first()
+    if not product:
+        return jsonify({'error': 'Product not found'}), 404
+        
     if product.images:
         images = json.loads(product.images)
         image_urls = [
@@ -318,12 +320,13 @@ def get_product_images(user_id, id):
         return jsonify({'images': image_urls})
     return jsonify({'images': []})
 
+
 @main.route('/products')
 def products():
     """Display products for customers with search and pagination."""
     search = request.args.get('search', '')
     page = request.args.get('page', 1, type=int)
-    per_page = 12  # Show 12 products per page
+    per_page = 8  # Show 8 products per page
     
     query = Product.query
     if search:
@@ -337,7 +340,6 @@ def products():
     products = query.order_by(Product.name).paginate(
         page=page, per_page=per_page, error_out=False
     )
-    print("Hello man")
     return render_template('products.html', products=products, search=search)
 
 @main.route('/cart')
@@ -370,7 +372,7 @@ def update_cart(user_id):
     quantity = data.get('quantity')
     
     cart_item = CartItem.query.filter_by(
-        user_id=user_id, ws_code=ws_code
+        user_id=current_user.id, ws_code=ws_code
     ).first()
     
     if not cart_item:
@@ -388,18 +390,22 @@ def update_cart(user_id):
         return jsonify({'error': str(e)}), 500
 
 @main.route('/order/place', methods=['POST'])
+@csrf.exempt  # Add CSRF exemption
 @token_required
+@login_required  # Add login required
 def place_order(user_id):
-    cart_items = CartItem.query.filter_by(user_id=user_id).all()
-    if not cart_items:
-        return jsonify({'error': 'Cart is empty'}), 400
-    
-    total_amount = sum(item.quantity * item.product.price for item in cart_items)
-    
     try:
+        cart_items = CartItem.query.filter_by(user_id=current_user.id).all()
+        if not cart_items:
+            return jsonify({'error': 'Cart is empty'}), 400
+        
+        total_amount = sum(item.quantity * item.product.price for item in cart_items)
+        
         # Check stock availability
         for cart_item in cart_items:
             product = Product.query.filter_by(ws_code=cart_item.ws_code).first()
+            if not product:
+                return jsonify({'error': f'Product with WS code {cart_item.ws_code} not found'}), 404
             if product.quantity_in_stock < cart_item.quantity:
                 return jsonify({
                     'error': f'Insufficient stock for {product.name}. Available: {product.quantity_in_stock}'
@@ -407,8 +413,9 @@ def place_order(user_id):
 
         # Create order
         order = Order(
-            user_id=user_id,
-            total_amount=total_amount
+            user_id=current_user.id,
+            total_amount=total_amount,
+            status='pending'
         )
         db.session.add(order)
         
@@ -419,13 +426,11 @@ def place_order(user_id):
                 order=order,
                 ws_code=cart_item.ws_code,
                 quantity=cart_item.quantity,
-                price=cart_item.product.price
+                price=product.price
             )
-            # Decrease product quantity
             product.quantity_in_stock -= cart_item.quantity
-            
             db.session.add(order_item)
-            db.session.delete(cart_item)
+            db.session.delete(cart_item)  # Remove item from cart
         
         db.session.commit()
         return jsonify({
@@ -435,7 +440,6 @@ def place_order(user_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
-
 
 
 

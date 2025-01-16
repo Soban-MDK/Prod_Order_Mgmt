@@ -272,21 +272,26 @@ async function checkout() {
     try {
         const response = await fetch('/order/place', {
             method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            },
             credentials: 'same-origin'
         });
         
-        const data = await response.json();
-        
-        if (response.ok) {
-            alert('Order placed successfully!');
-            window.location.href = '/products';
-        } else {
-            alert(data.error || 'Error placing order');
+        if (!response.ok) {
+            const data = await response.json();
+            throw new Error(data.error || 'Error placing order');
         }
+        
+        const data = await response.json();
+        alert('Order placed successfully!');
+        window.location.href = '/products';
     } catch (error) {
         console.error('Error:', error);
-        alert('Error placing order');
+        alert(error.message || 'Error placing order');
     }
 }
+
 </script>
 {% endblock %}
