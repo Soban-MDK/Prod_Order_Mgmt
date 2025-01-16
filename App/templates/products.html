@@ -22,7 +22,9 @@
             <div class="product-card">
                 <div class="product-image">
                     {% if product.images %}
-                        <img src="{{ url_for('static', filename='uploads/' + product.ws_code + '/' + (product.images|from_json)[0]) }}" alt="{{ product.name }}">
+                    {% set images = product.images|from_json %}
+                    <img src="{{ url_for('static', filename='uploads/' + product.ws_code + '/' + (images[0])) }}" 
+                         alt="{{ product.name }}">
                     {% else %}
                         <div class="no-image">No Image Available</div>
                     {% endif %}

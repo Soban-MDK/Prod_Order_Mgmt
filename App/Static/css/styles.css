@@ -1,5 +1,7 @@
 @import url('https://fonts.googleapis.com/css?family=Montserrat:400,800');
 
+
+
 * {
     box-sizing: border-box;
     margin: 0;
@@ -95,13 +97,14 @@ input {
     display: block;
     background-color: #fff;
     border-radius: 10px;
-    box-shadow: 0 14px 28px rgba(0,0,0,0.25), 
-                0 10px 10px rgba(0,0,0,0.22);
+    /* box-shadow: 0 14px 28px rgba(0,0,0,0.25), 
+                0 10px 10px rgba(0,0,0,0.22); */
     position: relative;
-    overflow: hidden;
-    width: 90%;  /* Changed from fixed width to percentage */
-    max-width: 1200px;  /* Add a max-width for very large screens */
+    overflow-y: scroll;
+    width: 100%;  /* Changed from fixed width to percentage */
+    max-width: 100%;  /* Add a max-width for very large screens */
     min-height: 480px;
+    width: 975px;
 }
 
 .form-container {

@@ -12,6 +12,7 @@ from .auth_decorators import generate_token
 from flask_wtf.csrf import CSRFProtect
 from .auth_decorators import token_required, admin_required
 from flask_login import login_user
+from datetime import datetime
 
 # The Blueprint object is created with the name 'main' to represent the main routes of the application.
 main = Blueprint('main', __name__) 
@@ -194,9 +195,11 @@ def manage_products(user_id):
 @admin_required
 def add_product(user_id):
     form = ProductForm()
+    print(form.validate_on_submit())
     if request.method == 'POST' and form.validate_on_submit():
         try:
             # Save images
+            # print(12)
             images = save_product_images(request.files.getlist('images'), form.ws_code.data)
             
             new_product = Product(
@@ -207,17 +210,20 @@ def add_product(user_id):
                 package_size=form.package_size.data,
                 images=json.dumps(images),
                 tags=json.dumps([tag.strip() for tag in form.tags.data.split(',')]),
-                category=form.category.data
+                category=form.category.data,
+                quantity_in_stock = form.quantity_in_stock.data
             )
+            print(new_product)
             db.session.add(new_product)
             db.session.commit()
             flash('Product added successfully!', 'success')
             return redirect(url_for('main.manage_products'))
             
         except Exception as e:
+            print(1234)
             db.session.rollback()
             flash(f'Error adding product: {str(e)}', 'error')
-    
+    # handel the else case 
     return render_template('add_product.html', form=form)
 
 
@@ -329,8 +335,8 @@ def products():
     products = query.order_by(Product.name).paginate(
         page=page, per_page=per_page, error_out=False
     )
-    
-    return render_template('customer/products.html', products=products, search=search)
+    print(products.items[0].images)
+    return render_template('products.html', products=products, search=search)
 
 @main.route('/cart')
 @token_required
@@ -415,3 +421,38 @@ def place_order(user_id):
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
+
+
+
+# add the add to cart route
+@main.route('/cart/add', methods=['POST'])
+@csrf.exempt
+@token_required
+def add_to_cart(user_id):
+    """Add a product to the cart."""
+    data = request.get_json()
+    ws_code = data.get('ws_code')
+    quantity = data.get('quantity', 1)
+    
+    product = Product.query.filter_by(ws_code=ws_code).first()
+    if not product:
+        return jsonify({'error': 'Product not found'}), 404
+    
+    cart_item = CartItem.query.filter_by(
+        user_id=user_id, ws_code=ws_code
+    ).first()
+    
+    if cart_item:
+        cart_item.quantity += quantity
+    else:
+        cart_item = CartItem(user_id=user_id, ws_code=ws_code, quantity=quantity, created_at=datetime.utcnow())
+        db.session.add(cart_item)
+    
+    db.session.commit()
+    return jsonify({'message': 'Product added to cart'})
+    # try:
+    #     db.session.commit()
+    #     return jsonify({'message': 'Product added to cart'})
+    # except Exception as e:
+    #     db.session.rollback()
+    #     return jsonify({'error': str(e)}), 500

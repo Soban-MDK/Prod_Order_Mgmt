@@ -1,27 +1,28 @@
-{% extends 'base.html' %}
+{% extends 'base3.html' %}
+{% block title %}Manage Products{% endblock %}
 
 {% block content %}
-<div class="container">
+<div class="container" style="max-width: 100%; width: 100%; padding: 0px; overflow: hidden;">
     <div class="header-actions">
         <h2>Manage Products</h2>
         <a href="{{ url_for('main.add_product') }}" class="add-btn">Add New Product</a>
     </div>
 
-    <!-- Search Form -->
     <form method="GET" action="{{ url_for('main.manage_products') }}" class="search-container">
-        <input 
-            type="text" 
-            name="search" 
-            value="{{ search }}" 
-            placeholder="Search by product name or WS code..."
-            class="search-input"
-        >
-        <button type="submit" class="search-button">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-        </button>
+        <div class="search-wrapper">
+            <input 
+                type="text" 
+                name="search" 
+                value="{{ search }}" 
+                placeholder="Search by product name or WS code..."
+                class="search-input"
+            >
+            <button type="submit" class="search-button">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            </button>
+        </div>
     </form>
 
-    
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
             {% for category, message in messages %}
@@ -39,18 +40,20 @@
                     <th>Sales Price</th>
                     <th>MRP</th>
                     <th>Package Size</th>
+                    <th>Quantity Available</th>
                     <th>Category</th>
                     <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
                 {% for product in products.items %}
-                    <tr class="product-row" data-product-id="{{ product.id }}">
+                <tr class="product-row" data-product-id="{{ product.id }}" data-ws-code="{{ product.ws_code }}">
                         <td>{{ product.name }}</td>
                         <td>{{ product.ws_code }}</td>
                         <td>₹{{ product.price }}</td>
                         <td>₹{{ product.mrp }}</td>
                         <td>{{ product.package_size }}</td>
+                        <td>{{ product.quantity_in_stock }}</td>
                         <td>{{ product.category }}</td>
                         <td class="actions">
                             <a href="{{ url_for('main.edit_product', id=product.id) }}" class="icon-button edit-icon" title="Edit">
@@ -60,7 +63,7 @@
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <button type="submit" class="icon-button delete-icon" title="Delete" onclick="return confirm('Are you sure you want to delete this product?')">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                            </button>
+                                </button>
                             </form>
                         </td>
                     </tr>
@@ -69,7 +72,14 @@
         </table>
     </div>
 
-    <!-- Pagination -->
+    <div id="imageModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h3 id="modalTitle" class="modal-title"></h3>
+            <div class="image-gallery"></div>
+        </div>
+    </div>
+
     {% if products.total > products.per_page %}
     <div class="pagination">
         {% if products.has_prev %}
@@ -94,229 +104,302 @@
     </div>
     {% endif %}
 
-    <!-- Image Modal -->
-    <div id="imageModal" class="modal">
-        <div class="modal-content">
-            <span class="close">&times;</span>
-            <div class="image-gallery"></div>
-        </div>
-    </div>
-</div>
-
-<style>
-* {
-    box-sizing: border-box;
-}
-
-.container {
-    padding: 20px;
-    font-family: BlinkMacSystemFont, -apple-system, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", "Helvetica", "Arial", sans-serif;
-}
-
-.search-container {
-    margin-bottom: 20px;
-    display: flex;
-    gap: 10px;
-    flex-direction: row;
-}
-
-.search-input {
-    display: inline;
-    flex: 1;
-    padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    width: 80%;
-    align-self:flex-start;
-}
-
-.search-button {
-    padding: 10px 15px;
-    background: #e38725;
-    border: none;
-    border-radius: 4px;
-    color: white;
-    cursor: pointer;
-    display: inline;
-}
-
-.header-actions {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-}
-
-.add-btn {
-    padding: 10px 20px;
-    background: #e38725;
-    color: white;
-    text-decoration: none;
-    border-radius: 4px;
-}
-
-table {
-    display: grid;
-    border-collapse: collapse;
-    min-width: 100%;
-    grid-template-columns: 
-        minmax(150px, 2fr)
-        minmax(100px, 1fr)
-        minmax(100px, 1fr)
-        minmax(100px, 1fr)
-        minmax(100px, 1fr)
-        minmax(100px, 1fr)
-        minmax(100px, 0.8fr);
-}
-
-thead,
-tbody,
-tr {
-    display: contents;
-}
-
-th,
-td {
-    padding: 15px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-th {
-    position: sticky;
-    top: 0;
-    background: #e38725;
-    text-align: left;
-    font-weight: normal;
-    font-size: 1.1rem;
-    color: white;
-}
-
-td {
-    padding-top: 10px;
-    padding-bottom: 10px;
-    color: #808080;
-}
-
-tr:nth-child(even) td {
-    background: #ded9d3;
-}
-
-.actions {
-    display: flex;
-    gap: 10px;
-}
-
-.icon-button {
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 5px;
-}
-
-.edit-icon {
-    color: #4a90e2;
-}
-
-.delete-icon {
-    color: #e74c3c;
-}
-
-.pagination {
-    margin-top: 20px;
-    display: flex;
-    justify-content: center;
-    gap: 5px;
-}
-
-.page-link {
-    padding: 8px 12px;
-    border: 1px solid #ddd;
-    text-decoration: none;
-    color: #e38725;
-}
-
-.page-link.active {
-    background: #e38725;
-    color: white;
-    border-color: #e38725;
-}
-
-.modal {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.7);
-}
-
-.modal-content {
-    position: relative;
-    background: white;
-    margin: 10% auto;
-    padding: 20px;
-    width: 80%;
-    max-width: 700px;
-}
-
-.close {
-    position: absolute;
-    right: 10px;
-    top: 10px;
-    font-size: 24px;
-    cursor: pointer;
-}
-
-.image-gallery {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 10px;
-}
-
-.image-gallery img {
-    width: 100%;
-    height: auto;
-}
-</style>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const modal = document.getElementById('imageModal');
-    const closeBtn = modal.querySelector('.close');
-    const imageGallery = modal.querySelector('.image-gallery');
-
-    document.querySelectorAll('.product-row').forEach(row => {
-        row.addEventListener('click', function(e) {
-            if (e.target.closest('.actions')) return;
-
-            const productId = this.dataset.productId;
-            
-            fetch(`/get_product_images/${productId}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.images && data.images.length > 0) {
-                        imageGallery.innerHTML = data.images.map(image => 
-                            `<img src="${image}" alt="Product image">`
-                        ).join('');
-                        modal.style.display = 'block';
-                    }
-                })
-                .catch(error => console.error('Error:', error));
-        });
-    });
-
-    closeBtn.onclick = function() {
-        modal.style.display = 'none';
+    <style>
+    .container {
+        padding: 20px;
     }
 
-    window.onclick = function(e) {
-        if (e.target == modal) {
-            modal.style.display = 'none';
+    .header-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding: 0 20px;
+    }
+
+    .product-row {
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+
+    .product-row:hover td {
+        background-color: #f5f5f5;
+    }
+
+    /* Modal Styles */
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.7);
+        z-index: 1000;
+    }
+
+    .modal-content {
+        position: relative;
+        background-color: #fff;
+        margin: 5% auto;
+        padding: 20px;
+        width: 80%;
+        max-width: 800px;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .modal-title {
+        margin-bottom: 20px;
+        color: #333;
+        font-size: 1.5rem;
+    }
+
+    .close {
+        position: absolute;
+        right: 15px;
+        top: 15px;
+        font-size: 28px;
+        font-weight: bold;
+        color: #666;
+        cursor: pointer;
+    }
+
+    .close:hover {
+        color: #333;
+    }
+
+    .image-gallery {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        padding: 20px 0;
+    }
+
+    .image-gallery img {
+        width: 100%;
+        height: 200px;
+        object-fit: cover;
+        border-radius: 4px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .add-btn {
+        padding: 10px 20px;
+        background: #e38725;
+        color: white;
+        text-decoration: none;
+        border-radius: 4px;
+        font-weight: 500;
+        transition: background-color 0.3s ease;
+    }
+
+    .add-btn:hover {
+        background: #d17720;
+    }
+
+    .search-container {
+        margin-bottom: 20px;
+        padding: 0 20px;
+    }
+
+    .search-wrapper {
+        display: flex;
+        align-items: center;
+        max-width: 900px;
+        width: 750px;
+    }
+
+    .search-input {
+        flex: 1;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px 0 0 4px;
+        font-size: 14px;
+        height: 42px;
+    }
+
+    .search-button {
+        padding: 10px 15px;
+        background: #e38725;
+        border: none;
+        border-radius: 0 4px 4px 0;
+        color: white;
+        cursor: pointer;
+        height: 42px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .search-button:hover {
+        background: #d17720;
+    }
+
+    .table-container {
+        overflow-x: auto;
+        width: 100%;
+        margin-bottom: 20px;
+        padding: 0 20px;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        white-space: nowrap;
+        min-width: 800px;
+    }
+
+    thead, tbody, tr {
+        display: table;
+        width: 100%;
+        table-layout: fixed;
+    }
+
+    th, td {
+        padding: 15px;
+        text-align: left;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    th {
+        background: #e38725;
+        color: white;
+        font-weight: normal;
+        font-size: 1.1rem;
+    }
+
+    td {
+        padding-top: 10px;
+        padding-bottom: 10px;
+        color: #808080;
+    }
+
+    tr:nth-child(even) td {
+        background: #ded9d3;
+    }
+
+    .actions {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-start;
+        align-items: center;
+        width: 100%;
+    }
+
+    .icon-button {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 5px;
+    }
+
+    .edit-icon {
+        color: #4a90e2;
+    }
+
+    .delete-icon {
+        color: #e74c3c;
+    }
+
+    .pagination {
+        display: flex;
+        justify-content: center;
+        gap: 5px;
+        margin-top: 20px;
+        padding: 20px;
+    }
+
+    .page-link {
+        padding: 8px 12px;
+        border: 1px solid #e38725;
+        text-decoration: none;
+        color: #e38725;
+        border-radius: 4px;
+        transition: all 0.3s ease;
+    }
+
+    .page-link:hover {
+        background: #e38725;
+        color: white;
+    }
+
+    .page-link.active {
+        background: #e38725;
+        color: white;
+        border-color: #e38725;
+    }
+
+    .page-link.dots {
+        border: none;
+        padding: 8px 4px;
+    }
+
+    @media screen and (max-width: 1024px) {
+        .table-container {
+            overflow-x: scroll;
         }
     }
-});
-</script>
+
+    </style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const modal = document.getElementById('imageModal');
+        const closeBtn = document.querySelector('.close');
+        const imageGallery = document.querySelector('.image-gallery');
+        const modalTitle = document.getElementById('modalTitle');
+
+        // Row click handler
+        document.querySelectorAll('.product-row').forEach(row => {
+            row.addEventListener('click', function(e) {
+                // Prevent triggering when clicking action buttons
+                if (e.target.closest('.actions')) {
+                    return;
+                }
+                
+                const productId = this.dataset.productId;
+                const wsCode = this.dataset.wsCode;
+                
+                // Update modal title with WS code
+                modalTitle.textContent = `Images for WS Code: ${wsCode}`;
+                
+                // Fetch images using product ID
+                fetch(`/get_product_images/${productId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.images && data.images.length > 0) {
+                            imageGallery.innerHTML = data.images
+                                .map(image => `<img src="${image}" alt="Product image">`)
+                                .join('');
+                            modal.style.display = 'block';
+                        } else {
+                            imageGallery.innerHTML = '<p>No images available for this product.</p>';
+                            modal.style.display = 'block';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        imageGallery.innerHTML = '<p>Error loading images.</p>';
+                        modal.style.display = 'block';
+                    });
+            });
+        });
+
+        // Close modal when clicking the close button
+        closeBtn.onclick = function() {
+            modal.style.display = 'none';
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(e) {
+            if (e.target == modal) {
+                modal.style.display = 'none';
+            }
+        }
+    });
+    </script>
+</div>
 {% endblock %}

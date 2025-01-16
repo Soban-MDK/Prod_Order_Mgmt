@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'base2.html' %}
 
 {% block title %}Admin Sign In{% endblock %}
 
@@ -8,7 +8,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="container" id="container">
+<div class="container" id="container" style="max-width: 975px;">
     <div class="form-container sign-in-container">
         <form method="POST" id="adminSigninForm">
             {{ form.hidden_tag() }}

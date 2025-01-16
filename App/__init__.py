@@ -3,6 +3,16 @@ from flask_login import LoginManager
 from .models import db, User
 from flask_wtf.csrf import CSRFProtect
 import os
+import json
+
+def from_json(value):
+    if isinstance(value, str):
+        try:
+            return json.loads(value)
+        except json.JSONDecodeError:
+            return []
+    return value
+
 
 def create_app():
     app = Flask(__name__)
@@ -12,6 +22,7 @@ def create_app():
     app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:password@localhost:5432/Medkart_Data'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['WTF_CSRF_ENABLED'] = True
+    app.jinja_env.filters['from_json'] = from_json
 
     # Initialize extensions
     csrf = CSRFProtect(app)
