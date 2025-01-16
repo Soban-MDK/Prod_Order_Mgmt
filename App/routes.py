@@ -255,6 +255,7 @@ def edit_product(user_id, id):
             product.package_size = form.package_size.data
             product.tags = json.dumps([tag.strip() for tag in form.tags.data.split(',')])
             product.category = form.category.data
+            product
             
             db.session.commit()
             flash('Product updated successfully!', 'success')
@@ -285,7 +286,8 @@ def delete_product(user_id, id):
     try:
         # Delete product images from filesystem
         if product.images:
-            image_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], str(product.ws_code))
+            print(os.path.join(UPLOAD_FOLDER, str(product.ws_code)))
+            image_folder = os.path.join(UPLOAD_FOLDER, str(product.ws_code))
             if os.path.exists(image_folder):
                 for image in json.loads(product.images):
                     image_path = os.path.join(image_folder, image)
@@ -335,7 +337,7 @@ def products():
     products = query.order_by(Product.name).paginate(
         page=page, per_page=per_page, error_out=False
     )
-    print(products.items[0].images)
+    print("Hello man")
     return render_template('products.html', products=products, search=search)
 
 @main.route('/cart')
