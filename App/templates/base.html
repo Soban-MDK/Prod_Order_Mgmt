@@ -2,75 +2,123 @@
 
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="csrf-token" content="{{ csrf_token() }}" />
     <title>{% block title %}MedKart{% endblock %}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
-    <link href="https://fonts.googleapis.com/css?family=Montserrat:400,800" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/styles.css') }}"
+    />
+    <link
+      href="https://fonts.googleapis.com/css?family=Montserrat:400,800"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"
+    />
     {% block extra_css %}{% endblock %}
-</head>
-<body>
+  </head>
+  <body>
     <nav class="navbar">
-        <div class="logo">
-            <a href="{{ url_for('main.home') }}">
-                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo">
-            </a>
+      <div class="logo">
+        <a href="{{ url_for('main.home') }}">
+          <img
+            src="{{ url_for('static', filename='images/logo.png') }}"
+            alt="Logo"
+          />
+        </a>
+      </div>
+      <ul class="nav-items">
+        <li>
+          <a
+            href="{{ url_for('main.home') }}"
+            class="{{ 'active' if request.endpoint == 'main.home' }}"
+            >Home</a
+          >
+        </li>
+        <li>
+          <a
+            href="{{ url_for('main.products') }}"
+            class="{{ 'active' if request.endpoint == 'main.products' }}"
+            >Products</a
+          >
+        </li>
+        <li><a href="#about">About</a></li>
+        <li><a href="#why-generic">Why Generic</a></li>
+        <li><a href="#contact">Contact</a></li>
+      </ul>
+      <div class="auth-section">
+        {% if current_user.is_authenticated %}
+        <a href="{{ url_for('main.view_cart') }}" class="cart-icon">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <circle cx="9" cy="21" r="1"></circle>
+            <circle cx="20" cy="21" r="1"></circle>
+            <path
+              d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"
+            ></path>
+          </svg>
+          <span class="cart-count">0</span>
+        </a>
+        <div class="profile-dropdown">
+          <div class="profile-circle" onclick="toggleDropdown()">
+            {{ current_user.name[0] }}
+          </div>
+          <div class="dropdown-content" id="profileDropdown">
+            <span>{{ current_user.name }}</span>
+            <a href="{{ url_for('main.view_orders') }}">My Orders</a>
+            <a href="{{ url_for('main.logout') }}">Logout</a>
+          </div>
         </div>
-        <ul class="nav-items">
-            <li><a href="{{ url_for('main.home') }}" class="{{ 'active' if request.endpoint == 'main.home' }}">Home</a></li>
-            <li><a href="{{ url_for('main.products') }}" class="{{ 'active' if request.endpoint == 'main.products' }}">Products</a></li>
-            <li><a href="#about">About</a></li>
-            <li><a href="#why-generic">Why Generic</a></li>
-            <li><a href="#contact">Contact</a></li>
-        </ul>
-        <div class="auth-section">
-            {% if current_user.is_authenticated %}
-            <a href="{{ url_for('main.view_cart') }}" class="cart-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
-                <span class="cart-count">0</span>
-            </a>
-            <div class="profile-dropdown">
-                <span>{{ current_user.name }}</span>
-                <div class="dropdown-content">
-                    <!-- <a href="{{ url_for('main.view_cart') }}">Cart</a> -->
-                    <a href="{{ url_for('main.view_orders') }}">My Orders</a>
-                    <a href="{{ url_for('main.signin') }}">Logout</a>
-                </div>
-            </div>
-            {% else %}
-            <a href="{{ url_for('main.signin') }}">Sign In</a>
-            <a href="{{ url_for('main.signup') }}">Sign Up</a>
-            {% endif %}
-        </div>
+        {% else %}
+        <a href="{{ url_for('main.signin') }}" style="padding: 15px 30px;">Sign In</a>
+        <a href="{{ url_for('main.signup') }}" style="padding: 15px 30px;">Sign Up</a>
+        {% endif %}
+      </div>
     </nav>
 
-    <div class="main-content">
-        {% block content %}{% endblock %}
-    </div>
+    <div class="main-content">{% block content %}{% endblock %}</div>
 
     {% block scripts %}{% endblock %}
-</body>
+  </body>
+
+  
+<script>
+    function toggleDropdown() {
+        document.getElementById('profileDropdown').classList.toggle('show');
+    }
+</script>
 </html>
 
 <style>
-.main-content {
-    margin-top: 120px; /* Adjust based on navbar height */
+
+
+  .main-content {
+    margin-top: 83px; /* Adjust based on navbar height */
     min-height: calc(100vh - 120px);
     width: 100%;
     padding: 20px;
-}
+  }
 
-.navbar {
+  .navbar {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     z-index: 1000;
     background: white;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
 </style>

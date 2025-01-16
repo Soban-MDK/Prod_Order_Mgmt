@@ -9,37 +9,46 @@
 
 {% block content %}
 <div class="home-container">
-    <!-- Carousel Section -->
-    <section class="carousel-section">
-        {% include 'Design//carousel.html' %}
-    </section>
+    <!-- Carousel -->
+    <div class="carousel">
+        <div class="carousel-inner">
+            <input class="carousel-open" type="radio" id="carousel-1" name="carousel" aria-hidden="true" hidden="" checked="checked">
+            <div class="carousel-item">
+                <img src="{{ url_for('static', filename='images/crsl-1.png') }}" class="crsl">
+            </div>
+            <input class="carousel-open" type="radio" id="carousel-2" name="carousel" aria-hidden="true" hidden="">
+            <div class="carousel-item">
+                <img src="{{ url_for('static', filename='images/crsl-2.webp') }}" class="crsl">
+            </div>
+            <input class="carousel-open" type="radio" id="carousel-3" name="carousel" aria-hidden="true" hidden="">
+            <div class="carousel-item">
+                <img src="{{ url_for('static', filename='images/crsl-3.webp') }}" class="crsl">
+            </div>
 
-    <!-- Featured Products -->
-    <section class="featured-products">
-        <h2>Featured Products</h2>
-        <div class="cards-container">
-            {% include 'components/cards.html' %}
+            <label for="carousel-3" class="carousel-control prev control-1">‹</label>
+            <label for="carousel-2" class="carousel-control next control-1">›</label>
+            <label for="carousel-1" class="carousel-control prev control-2">‹</label>
+            <label for="carousel-3" class="carousel-control next control-2">›</label>
+            <label for="carousel-2" class="carousel-control prev control-3">‹</label>
+            <label for="carousel-1" class="carousel-control next control-3">›</label>
+            <ol class="carousel-indicators">
+                <li>
+                    <label for="carousel-1" class="carousel-bullet">•</label>
+                </li>
+                <li>
+                    <label for="carousel-2" class="carousel-bullet">•</label>
+                </li>
+                <li>
+                    <label for="carousel-3" class="carousel-bullet">•</label>
+                </li>
+            </ol>
         </div>
-    </section>
+    </div>
 
     <!-- Other Sections -->
-    <section class="about-section" id="about">
-        <h2>About Us</h2>
-        <!-- About content -->
-    </section>
-
-    <section class="why-generic" id="why-generic">
-        <h2>Why Generic</h2>
-        <!-- Why Generic content -->
-    </section>
-
-    <section class="contact" id="contact">
-        <h2>Contact Us</h2>
-        <!-- Contact form -->
-    </section>
 </div>
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/carousel.js') }}"></script>
+<!-- <script src="{{ url_for('static', filename='js/carousel.js') }}"></script> -->
 {% endblock %}

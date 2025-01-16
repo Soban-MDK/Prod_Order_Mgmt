@@ -11,7 +11,7 @@ from flask_bcrypt import Bcrypt
 from .auth_decorators import generate_token
 from flask_wtf.csrf import CSRFProtect
 from .auth_decorators import token_required, admin_required
-from flask_login import login_user, login_required, current_user
+from flask_login import login_user, login_required, current_user, logout_user
 from datetime import datetime
 
 # The Blueprint object is created with the name 'main' to represent the main routes of the application.
@@ -279,7 +279,7 @@ def edit_product(user_id, id):
             product.package_size = form.package_size.data
             product.tags = json.dumps([tag.strip() for tag in form.tags.data.split(',')])
             product.category = form.category.data
-            product
+            product.quantity_in_stock = form.quantity_in_stock.data
             
             db.session.commit()
             flash('Product updated successfully!', 'success')
@@ -328,27 +328,49 @@ def delete_product(user_id, id):
 
 @main.route('/manage_orders')
 @admin_required
+@csrf.exempt
 def manage_orders(user_id):
     """Display all orders with pagination and search."""
     search = request.args.get('search', '')
     page = request.args.get('page', 1, type=int)
     per_page = 10
 
+    # Initialize query
     query = Order.query
     if search:
         query = query.filter(Order.id == search)
     
-    # Order by status (pending first) and then by date
+    # Get status counts
+    status_counts = {
+        'pending': Order.query.filter_by(status='pending').count(),
+        'accepted': Order.query.filter_by(status='accepted').count(),
+        'rejected': Order.query.filter_by(status='rejected').count(),
+        'delivered': Order.query.filter_by(status='delivered').count()
+    }
+    
+    # Updated case statement syntax
+    status_order = db.case(
+        (Order.status == 'pending', 1),
+        (Order.status == 'accepted', 2),
+        (Order.status == 'rejected', 3),
+        (Order.status == 'delivered', 4),
+        else_=5
+    )
+    
+    # Order by status and date
     query = query.order_by(
-        db.case(
-            {Order.status: 0 for Order in ['pending', 'accepted', 'rejected', 'delivered']},
-            value= Order.status
-        ),
+        status_order,
         Order.order_date.desc()
     )
     
     orders = query.paginate(page=page, per_page=per_page, error_out=False)
-    return render_template('manage_orders.html', orders=orders, search=search)
+    
+    return render_template(
+        'manage_orders.html',
+        orders=orders,
+        search=search,
+        status_counts=status_counts
+    )
 
 
 @main.route('/get_product_images/<ws_code>')
@@ -621,3 +643,11 @@ def update_order_status(user_id, order_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 400
+    
+@main.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    response = make_response(redirect(url_for('main.home')))
+    response.delete_cookie('access_token')
+    return response
