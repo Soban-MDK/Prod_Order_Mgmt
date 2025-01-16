@@ -33,11 +33,10 @@
                 <span class="cart-count">0</span>
             </a>
             <div class="profile-dropdown">
-                <img src="{{ url_for('static', filename='images/profile.jpg') }}" alt="Profile">
                 <span>{{ current_user.name }}</span>
                 <div class="dropdown-content">
-                    <a href="{{ url_for('main.view_cart') }}">Cart</a>
-                    <a href="#orders">My Orders</a>
+                    <!-- <a href="{{ url_for('main.view_cart') }}">Cart</a> -->
+                    <a href="{{ url_for('main.view_orders') }}">My Orders</a>
                     <a href="{{ url_for('main.signin') }}">Logout</a>
                 </div>
             </div>

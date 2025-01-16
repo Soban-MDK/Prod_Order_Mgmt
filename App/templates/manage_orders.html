@@ -1,28 +1,223 @@
 {% extends 'base2.html' %}
 
 {% block content %}
-<h1>Manage Orders</h1>
-<table>
-    <thead>
-        <tr>
-            <th>Order ID</th>
-            <th>Customer</th>
-            <th>Status</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for order in orders %}
-        <tr>
-            <td>{{ order.id }}</td>
-            <td>{{ order.customer_name }}</td>
-            <td>{{ order.status }}</td>
-            <td>
-                <a href="{{ url_for('main.view_order', order_id=order.id) }}">View</a>
-                <a href="{{ url_for('main.update_order', order_id=order.id) }}">Update</a>
-            </td>
-        </tr>
+<div class="orders-container">
+    <h1>Manage Orders</h1>
+
+    <div class="search-section">
+        <form method="GET" action="{{ url_for('main.manage_orders') }}" class="search-form">
+            <input type="text" name="search" value="{{ search }}" placeholder="Search by Order ID..." class="search-input"/>
+            <button type="submit" class="search-button">Search</button>
+        </form>
+    </div>
+
+    <div class="orders-table">
+        <table>
+            <thead>
+                <tr>
+                    <th>Order ID</th>
+                    <th>Customer Name</th>
+                    <th>Date</th>
+                    <th>Total Amount</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in orders.items %}
+                <tr class="order-row {% if order.status == 'pending' %}pending{% endif %}">
+                    <td>#{{ order.id }}</td>
+                    <td>{{ order.user.name }}</td>
+                    <td>{{ order.order_date.strftime('%Y-%m-%d %H:%M') }}</td>
+                    <td>₹{{ "%.2f"|format(order.total_amount) }}</td>
+                    <td>
+                        <span class="status-badge {{ order.status }}">
+                            {{ order.status|title }}
+                        </span>
+                    </td>
+                    <td class="actions">
+                        <button onclick="viewOrderDetails({{ order.id }})" class="view-btn">View</button>
+                        <select onchange="updateOrderStatus({{ order.id }}, this.value)" class="status-select">
+                            <option value="pending" {% if order.status == 'pending' %}selected{% endif %}>Pending</option>
+                            <option value="accepted" {% if order.status == 'accepted' %}selected{% endif %}>Accept</option>
+                            <option value="rejected" {% if order.status == 'rejected' %}selected{% endif %}>Reject</option>
+                            <option value="delivered" {% if order.status == 'delivered' %}selected{% endif %}>Delivered</option>
+                        </select>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Order Details Modal -->
+    <div id="orderDetailsModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <div id="orderDetailsContent"></div>
+        </div>
+    </div>
+
+    {% if orders.pages > 1 %}
+    <div class="pagination">
+        {% if orders.has_prev %}
+        <a href="{{ url_for('main.manage_orders', page=orders.prev_num, search=search) }}" class="page-link">Previous</a>
+        {% endif %}
+        
+        {% for page_num in orders.iter_pages(left_edge=2, left_current=2, right_current=3, right_edge=2) %}
+            {% if page_num %}
+                {% if page_num == orders.page %}
+                    <span class="page-link active">{{ page_num }}</span>
+                {% else %}
+                    <a href="{{ url_for('main.manage_orders', page=page_num, search=search) }}" class="page-link">{{ page_num }}</a>
+                {% endif %}
+            {% else %}
+                <span class="page-link dots">...</span>
+            {% endif %}
         {% endfor %}
-    </tbody>
-</table>
+        
+        {% if orders.has_next %}
+        <a href="{{ url_for('main.manage_orders', page=orders.next_num, search=search) }}" class="page-link">Next</a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<style>
+/* Add your existing styles from manage_products.html and customize as needed */
+.orders-container {
+    max-width: 1200px;
+    margin: 20px auto;
+    padding: 20px;
+}
+
+.pending {
+    background-color: #fff3cd !important;
+}
+
+.status-badge {
+    padding: 5px 10px;
+    border-radius: 15px;
+    font-size: 0.9em;
+}
+
+.status-badge.pending { background: #fff3cd; color: #856404; }
+.status-badge.accepted { background: #d4edda; color: #155724; }
+.status-badge.rejected { background: #f8d7da; color: #721c24; }
+.status-badge.processing { background: #cce5ff; color: #004085; }
+.status-badge.shipped { background: #d1e7dd; color: #0f5132; }
+.status-badge.delivered { background: #c3e6cb; color: #155724; }
+
+.status-select {
+    padding: 5px;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+}
+
+.view-btn {
+    padding: 5px 10px;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-right: 10px;
+}
+
+/* Add your other styles... */
+</style>
+
+<script>
+async function viewOrderDetails(orderId) {
+    try {
+        const response = await fetch(`/admin/order/${orderId}/details`);
+        const data = await response.json();
+        
+        if (response.ok) {
+            const modal = document.getElementById('orderDetailsModal');
+            const content = document.getElementById('orderDetailsContent');
+            
+            content.innerHTML = `
+                <h2>Order #${data.order.id}</h2>
+                <div class="order-info">
+                    <p>Customer: ${data.customer_name}</p>
+                    <p>Date: ${new Date(data.order.order_date).toLocaleString()}</p>
+                    <p>Status: <span class="status-badge ${data.order.status}">${data.order.status}</span></p>
+                    <p>Total Amount: ₹${data.order.total_amount.toFixed(2)}</p>
+                </div>
+                <div class="order-items">
+                    <h3>Items</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Product</th>
+                                <th>WS Code</th>
+                                <th>Quantity</th>
+                                <th>Price</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${data.items.map(item => `
+                                <tr>
+                                    <td>${item.product_name}</td>
+                                    <td>${item.ws_code}</td>
+                                    <td>${item.quantity}</td>
+                                    <td>₹${item.price.toFixed(2)}</td>
+                                    <td>₹${(item.quantity * item.price).toFixed(2)}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            
+            modal.style.display = 'block';
+        } else {
+            throw new Error(data.error || 'Error fetching order details');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert(error.message);
+    }
+}
+
+async function updateOrderStatus(orderId, status) {
+    try {
+        const response = await fetch(`/admin/order/${orderId}/update_status`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({ status: status }),
+            credentials: 'same-origin'
+        });
+
+        if (!response.ok) {
+            const data = await response.json();
+            throw new Error(data.error || 'Error updating order status');
+        }
+
+        location.reload();
+    } catch (error) {
+        console.error('Error:', error);
+        alert(error.message);
+    }
+}
+
+// Modal close functionality
+const modal = document.getElementById('orderDetailsModal');
+const closeBtn = document.querySelector('.close');
+
+closeBtn.onclick = function() {
+    modal.style.display = 'none';
+}
+
+window.onclick = function(event) {
+    if (event.target == modal) {
+        modal.style.display = 'none';
+    }
+}
+</script>
 {% endblock %}

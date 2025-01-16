@@ -6,13 +6,17 @@
     <p>You are logged in as an administrator.</p>
 
     <div class="row mt-4">
-        <div class="col-md-6">
+        <div class="col-md-4">
             <a href="{{ url_for('main.manage_products') }}" class="btn btn-primary btn-lg btn-block mb-3">Manage Products</a>
         </div>
-        <div class="col-md-6">
+        <div class="col-md-4">
+            <a href="{{ url_for('main.manage_orders') }}" class="btn btn-primary btn-lg btn-block mb-3">Manage Orders</a>
+        </div>
+        <div class="col-md-4">
             <button onclick="logout()" class="btn btn-danger btn-lg btn-block">Logout</button>
         </div>
     </div>
+    
 </div>
 
 <script>

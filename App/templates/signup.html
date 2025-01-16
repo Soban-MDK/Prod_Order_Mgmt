@@ -55,7 +55,7 @@ document.getElementById('signupForm').addEventListener('submit', async (e) => {
         const data = await response.json();
         
         if (response.ok) {
-            window.location.href = '/protected';
+            window.location.href = '/signin';
         } else {
             // Clear previous errors
             document.querySelectorAll('.error').forEach(el => el.textContent = '');

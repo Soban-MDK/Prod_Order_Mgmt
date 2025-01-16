@@ -69,7 +69,7 @@ def signup():
     return render_template('signup.html', form=form)
 
 
-
+# Signin Route
 @main.route('/signin', methods=['GET', 'POST'])
 @csrf.exempt
 def signin():
@@ -106,6 +106,30 @@ def signin():
 
     form = SigninForm()
     return render_template('signin.html', form=form)
+
+
+# Products Page Route
+@main.route('/products')
+def products():
+    """Display products for customers with search and pagination."""
+    search = request.args.get('search', '')
+    page = request.args.get('page', 1, type=int)
+    per_page = 8  # Show 8 products per page
+    
+    query = Product.query
+    if search:
+        query = query.filter(
+            db.or_(
+                Product.name.ilike(f'%{search}%'),
+                Product.ws_code.ilike(f'%{search}%')
+            )
+        )
+    
+    products = query.order_by(Product.name).paginate(
+        page=page, per_page=per_page, error_out=False
+    )
+    return render_template('products.html', products=products, search=search)
+
 
 
 # Admin Signin Route - Updated with proper token generation
@@ -268,8 +292,6 @@ def edit_product(user_id, id):
     return render_template('edit_product.html', form=form, product=product)
 
 
-
-
 # Update delete_product route to handle AJAX requests
 @main.route('/delete_product/<int:id>', methods=['POST'])
 @admin_required
@@ -304,6 +326,31 @@ def delete_product(user_id, id):
     
     return redirect(url_for('main.manage_products'))
 
+@main.route('/manage_orders')
+@admin_required
+def manage_orders(user_id):
+    """Display all orders with pagination and search."""
+    search = request.args.get('search', '')
+    page = request.args.get('page', 1, type=int)
+    per_page = 10
+
+    query = Order.query
+    if search:
+        query = query.filter(Order.id == search)
+    
+    # Order by status (pending first) and then by date
+    query = query.order_by(
+        db.case(
+            {Order.status: 0 for Order in ['pending', 'accepted', 'rejected', 'delivered']},
+            value= Order.status
+        ),
+        Order.order_date.desc()
+    )
+    
+    orders = query.paginate(page=page, per_page=per_page, error_out=False)
+    return render_template('manage_orders.html', orders=orders, search=search)
+
+
 @main.route('/get_product_images/<ws_code>')
 def get_product_images(ws_code):
     """Get product images based on WS code."""
@@ -320,27 +367,6 @@ def get_product_images(ws_code):
         return jsonify({'images': image_urls})
     return jsonify({'images': []})
 
-
-@main.route('/products')
-def products():
-    """Display products for customers with search and pagination."""
-    search = request.args.get('search', '')
-    page = request.args.get('page', 1, type=int)
-    per_page = 8  # Show 8 products per page
-    
-    query = Product.query
-    if search:
-        query = query.filter(
-            db.or_(
-                Product.name.ilike(f'%{search}%'),
-                Product.ws_code.ilike(f'%{search}%')
-            )
-        )
-    
-    products = query.order_by(Product.name).paginate(
-        page=page, per_page=per_page, error_out=False
-    )
-    return render_template('products.html', products=products, search=search)
 
 @main.route('/cart')
 @token_required
@@ -364,30 +390,42 @@ def get_cart_count(user_id):
 
 
 @main.route('/cart/update', methods=['POST'])
+@csrf.exempt
 @token_required
+@login_required
 def update_cart(user_id):
     """Update cart item quantity."""
-    data = request.get_json()
-    ws_code = data.get('ws_code')
-    quantity = data.get('quantity')
-    
-    cart_item = CartItem.query.filter_by(
-        user_id=current_user.id, ws_code=ws_code
-    ).first()
-    
-    if not cart_item:
-        return jsonify({'error': 'Cart item not found'}), 404
-    
     try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+
+        ws_code = data.get('ws_code')
+        quantity = int(data.get('quantity', 0))
+        
+        cart_item = CartItem.query.filter_by(
+            user_id=current_user.id, 
+            ws_code=ws_code
+        ).first()
+        
+        if not cart_item:
+            return jsonify({'error': 'Cart item not found'}), 404
+        
         if quantity > 0:
+            # Check stock availability
+            product = Product.query.filter_by(ws_code=ws_code).first()
+            if product.quantity_in_stock < quantity:
+                return jsonify({'error': 'Not enough stock available'}), 400
             cart_item.quantity = quantity
         else:
             db.session.delete(cart_item)
+        
         db.session.commit()
-        return jsonify({'message': 'Cart updated'})
+        return jsonify({'message': 'Cart updated successfully'})
+
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': str(e)}), 400
 
 @main.route('/order/place', methods=['POST'])
 @csrf.exempt  # Add CSRF exemption
@@ -493,3 +531,93 @@ def add_to_cart(user_id):
     # except Exception as e:
     #     db.session.rollback()
     #     return jsonify({'error': str(e)}), 500
+
+@main.route('/orders')
+@token_required
+@login_required
+def view_orders(user_id):
+    """View user's orders."""
+    orders = Order.query.filter_by(user_id=current_user.id)\
+        .order_by(Order.order_date.desc())\
+        .all()
+    return render_template('orders.html', orders=orders)
+
+
+@main.route('/order/<int:order_id>/details')
+@token_required
+@login_required
+def order_details(user_id, order_id):
+    """Get order details."""
+    order = Order.query.filter_by(
+        id=order_id, 
+        user_id=current_user.id
+    ).first()
+    
+    if not order:
+        return jsonify({'error': 'Order not found'}), 404
+    
+    items = []
+    for item in order.items:
+        product = Product.query.filter_by(ws_code=item.ws_code).first()
+        items.append({
+            'product_name': product.name if product else 'Unknown Product',
+            'quantity': item.quantity,
+            'price': item.price,
+            'ws_code': item.ws_code
+        })
+    
+    return jsonify({
+        'order': {
+            'id': order.id,
+            'order_date': order.order_date,
+            'status': order.status,
+            'total_amount': order.total_amount
+        },
+        'items': items
+    })
+
+@main.route('/admin/order/<int:order_id>/details')
+@admin_required
+def admin_order_details(user_id, order_id):
+    """Get detailed order information."""
+    order = Order.query.get_or_404(order_id)
+    
+    items = []
+    for item in order.items:
+        product = Product.query.filter_by(ws_code=item.ws_code).first()
+        items.append({
+            'product_name': product.name if product else 'Unknown Product',
+            'ws_code': item.ws_code,
+            'quantity': item.quantity,
+            'price': item.price
+        })
+    
+    return jsonify({
+        'order': {
+            'id': order.id,
+            'order_date': order.order_date,
+            'status': order.status,
+            'total_amount': order.total_amount
+        },
+        'customer_name': order.user.name,
+        'items': items
+    })
+
+@main.route('/admin/order/<int:order_id>/update_status', methods=['POST'])
+@admin_required
+@csrf.exempt
+def update_order_status(user_id, order_id):
+    """Update order status."""
+    try:
+        data = request.get_json()
+        if not data or 'status' not in data:
+            return jsonify({'error': 'Status is required'}), 400
+
+        order = Order.query.get_or_404(order_id)
+        order.status = data['status']
+        db.session.commit()
+        
+        return jsonify({'message': 'Order status updated successfully'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 400

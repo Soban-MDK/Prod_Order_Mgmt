@@ -206,20 +206,21 @@
 
 <script>
 async function updateQuantity(wsCode, change) {
-    const input = document.querySelector(`.quantity-input[data-ws-code="${wsCode}"]`);
-    let newQuantity = parseInt(input.value);
-    
-    if (change !== 0) {
-        newQuantity += change;
-    }
-    
-    if (newQuantity < 1) return;
-    
     try {
+        const input = document.querySelector(`.quantity-input[data-ws-code="${wsCode}"]`);
+        let newQuantity = parseInt(input.value);
+        
+        if (change !== 0) {
+            newQuantity += change;
+        }
+        
+        if (newQuantity < 1) return;
+        
         const response = await fetch('/cart/update', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
             },
             body: JSON.stringify({
                 ws_code: wsCode,
@@ -228,26 +229,29 @@ async function updateQuantity(wsCode, change) {
             credentials: 'same-origin'
         });
         
+        const data = await response.json();
+        
         if (response.ok) {
             location.reload();
         } else {
-            const data = await response.json();
-            alert(data.error || 'Error updating cart');
+            throw new Error(data.error || 'Error updating cart');
         }
     } catch (error) {
         console.error('Error:', error);
-        alert('Error updating cart');
+        alert(error.message || 'Error updating cart');
     }
 }
 
+
 async function removeItem(wsCode) {
-    if (!confirm('Are you sure you want to remove this item?')) return;
-    
     try {
+        if (!confirm('Are you sure you want to remove this item?')) return;
+        
         const response = await fetch('/cart/update', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
             },
             body: JSON.stringify({
                 ws_code: wsCode,
@@ -256,15 +260,16 @@ async function removeItem(wsCode) {
             credentials: 'same-origin'
         });
         
+        const data = await response.json();
+        
         if (response.ok) {
             location.reload();
         } else {
-            const data = await response.json();
-            alert(data.error || 'Error removing item');
+            throw new Error(data.error || 'Error removing item');
         }
     } catch (error) {
         console.error('Error:', error);
-        alert('Error removing item');
+        alert(error.message || 'Error removing item');
     }
 }
 
