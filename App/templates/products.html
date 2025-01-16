@@ -1,4 +1,9 @@
-{% extends 'base.html' %} {% block content %}
+{% extends 'base.html' %} 
+
+{% block title %}Products{% endblock %}
+
+
+{% block content %}
 <div class="container">
   <div class="search-section">
     <form
@@ -110,50 +115,58 @@
 </div>
 
 <script>
-  document.querySelectorAll(".add-to-cart-btn").forEach((button) => {
-    button.addEventListener("click", async function () {
-      const wsCode = this.dataset.wsCode;
-      const quantityInput = document.querySelector(
-        `.quantity-input[data-ws-code="${wsCode}"]`
-      );
-      const quantity = parseInt(quantityInput.value);
-
+    document.querySelectorAll(".add-to-cart-btn").forEach((button) => {
+      button.addEventListener("click", async function () {
+        try {
+          const wsCode = this.dataset.wsCode;
+          const quantityInput = document.querySelector(
+            `.quantity-input[data-ws-code="${wsCode}"]`
+          );
+          const quantity = parseInt(quantityInput.value) || 1;
+    
+          const response = await fetch("/cart/add", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-CSRFToken": "{{ csrf_token() }}"  // Add CSRF token if using Flask-WTF
+            },
+            body: JSON.stringify({
+              ws_code: wsCode,
+              quantity: quantity
+            }),
+            credentials: 'same-origin'  // Include cookies
+          });
+    
+          const data = await response.json();
+          
+          if (response.ok) {
+            alert("Product added to cart successfully!");
+            updateCartCount();
+          } else {
+            alert(data.error || "Error adding to cart");
+          }
+        } catch (error) {
+          console.error("Error:", error);
+          alert("Error adding to cart. Please try again.");
+        }
+      });
+    });
+    
+    async function updateCartCount() {
       try {
-        const response = await fetch("/cart/add", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            ws_code: wsCode,
-            quantity: quantity,
-          }),
+        const response = await fetch("/cart/count", {
+          credentials: 'same-origin'
         });
-
-        const data = await response.json();
         if (response.ok) {
-          // Show success message
-          alert("Product added to cart!");
-          // Update cart count
-          updateCartCount();
-        } else {
-          alert(data.error || "Error adding to cart");
+          const data = await response.json();
+          const cartCount = document.querySelector(".cart-count");
+          if (cartCount) {
+            cartCount.textContent = data.count;
+          }
         }
       } catch (error) {
-        console.error("Error:", error);
-        alert("Error adding to cart");
+        console.error("Error updating cart count:", error);
       }
-    });
-  });
-
-  async function updateCartCount() {
-    try {
-      const response = await fetch("/cart/count");
-      const data = await response.json();
-      document.querySelector(".cart-count").textContent = data.count;
-    } catch (error) {
-      console.error("Error updating cart count:", error);
     }
-  }
-</script>
+    </script>
 {% endblock %}

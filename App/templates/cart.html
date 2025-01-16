@@ -1,0 +1,292 @@
+{% extends 'base.html' %}
+
+{% block title %}Shopping Cart{% endblock %}
+
+{% block content %}
+<div class="cart-container">
+    <h1>Shopping Cart</h1>
+    
+    {% if cart_items %}
+    <div class="cart-items">
+        {% for item in cart_items %}
+        <div class="cart-item" data-ws-code="{{ item.ws_code }}">
+            <div class="item-image">
+                {% if item.product.images %}
+                {% set images = item.product.images|from_json %}
+                {% if images and images[0] %}
+                <img src="{{ url_for('static', filename='uploads/' ~ item.ws_code ~ '/' ~ images[0]) }}" alt="{{ item.product.name }}">
+                {% else %}
+                <div class="no-image">No Image</div>
+                {% endif %}
+                {% endif %}
+            </div>
+            <div class="item-details">
+                <h3>{{ item.product.name }}</h3>
+                <p class="ws-code">WS Code: {{ item.ws_code }}</p>
+                <p class="price">₹{{ item.product.price }} <span class="mrp">MRP: ₹{{ item.product.mrp }}</span></p>
+                <div class="quantity-controls">
+                    <button class="qty-btn minus" onclick="updateQuantity('{{ item.ws_code }}', -1)">-</button>
+                    <input type="number" class="quantity-input" value="{{ item.quantity }}" min="1" 
+                           data-ws-code="{{ item.ws_code }}" onchange="updateQuantity('{{ item.ws_code }}', 0)">
+                    <button class="qty-btn plus" onclick="updateQuantity('{{ item.ws_code }}', 1)">+</button>
+                </div>
+                <button class="remove-btn" onclick="removeItem('{{ item.ws_code }}')">Remove</button>
+            </div>
+            <div class="item-total">
+                <p>Total: ₹{{ "%.2f"|format(item.quantity * item.product.price) }}</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <div class="cart-summary">
+        <h2>Order Summary</h2>
+        <div class="summary-item">
+            <span>Subtotal:</span>
+            <span>₹{{ "%.2f"|format(total) }}</span>
+        </div>
+        <div class="summary-item">
+            <span>Shipping:</span>
+            <span>FREE</span>
+        </div>
+        <div class="summary-item total">
+            <span>Total:</span>
+            <span>₹{{ "%.2f"|format(total) }}</span>
+        </div>
+        <button id="checkout-btn" class="checkout-btn" onclick="checkout()">Proceed to Checkout</button>
+    </div>
+    {% else %}
+    <div class="empty-cart">
+        <h2>Your cart is empty</h2>
+        <p>Add some products to your cart and they will appear here</p>
+        <a href="{{ url_for('main.products') }}" class="continue-shopping">Continue Shopping</a>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.cart-container {
+    max-width: 1200px;
+    margin: 20px auto;
+    padding: 20px;
+}
+
+.cart-items {
+    flex: 2;
+    margin-right: 20px;
+}
+
+.cart-item {
+    display: flex;
+    padding: 20px;
+    margin-bottom: 20px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.item-image {
+    width: 120px;
+    height: 120px;
+    margin-right: 20px;
+}
+
+.item-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 4px;
+}
+
+.item-details {
+    flex: 1;
+}
+
+.item-details h3 {
+    margin: 0 0 10px 0;
+    color: #333;
+}
+
+.quantity-controls {
+    display: flex;
+    align-items: center;
+    margin: 10px 0;
+}
+
+.qty-btn {
+    padding: 5px 10px;
+    border: none;
+    background: #f0f0f0;
+    cursor: pointer;
+}
+
+.quantity-input {
+    width: 60px;
+    text-align: center;
+    margin: 0 10px;
+    padding: 5px;
+}
+
+.remove-btn {
+    padding: 5px 10px;
+    border: none;
+    background: #ff4444;
+    color: white;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.cart-summary {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.summary-item {
+    display: flex;
+    justify-content: space-between;
+    margin: 10px 0;
+}
+
+.total {
+    font-weight: bold;
+    font-size: 1.2em;
+    border-top: 1px solid #ddd;
+    padding-top: 10px;
+}
+
+.checkout-btn {
+    width: 100%;
+    padding: 15px;
+    background: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1.1em;
+}
+
+.empty-cart {
+    text-align: center;
+    padding: 40px;
+}
+
+.continue-shopping {
+    display: inline-block;
+    padding: 10px 20px;
+    background: #4CAF50;
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+    margin-top: 20px;
+}
+
+@media (max-width: 768px) {
+    .cart-container {
+        flex-direction: column;
+    }
+    
+    .cart-items {
+        margin-right: 0;
+        margin-bottom: 20px;
+    }
+    
+    .cart-item {
+        flex-direction: column;
+    }
+    
+    .item-image {
+        width: 100%;
+        height: 200px;
+        margin-bottom: 10px;
+    }
+}
+</style>
+
+<script>
+async function updateQuantity(wsCode, change) {
+    const input = document.querySelector(`.quantity-input[data-ws-code="${wsCode}"]`);
+    let newQuantity = parseInt(input.value);
+    
+    if (change !== 0) {
+        newQuantity += change;
+    }
+    
+    if (newQuantity < 1) return;
+    
+    try {
+        const response = await fetch('/cart/update', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                ws_code: wsCode,
+                quantity: newQuantity
+            }),
+            credentials: 'same-origin'
+        });
+        
+        if (response.ok) {
+            location.reload();
+        } else {
+            const data = await response.json();
+            alert(data.error || 'Error updating cart');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error updating cart');
+    }
+}
+
+async function removeItem(wsCode) {
+    if (!confirm('Are you sure you want to remove this item?')) return;
+    
+    try {
+        const response = await fetch('/cart/update', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                ws_code: wsCode,
+                quantity: 0
+            }),
+            credentials: 'same-origin'
+        });
+        
+        if (response.ok) {
+            location.reload();
+        } else {
+            const data = await response.json();
+            alert(data.error || 'Error removing item');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error removing item');
+    }
+}
+
+async function checkout() {
+    try {
+        const response = await fetch('/order/place', {
+            method: 'POST',
+            credentials: 'same-origin'
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            alert('Order placed successfully!');
+            window.location.href = '/products';
+        } else {
+            alert(data.error || 'Error placing order');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error placing order');
+    }
+}
+</script>
+{% endblock %}

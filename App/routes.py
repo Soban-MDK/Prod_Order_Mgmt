@@ -11,7 +11,7 @@ from flask_bcrypt import Bcrypt
 from .auth_decorators import generate_token
 from flask_wtf.csrf import CSRFProtect
 from .auth_decorators import token_required, admin_required
-from flask_login import login_user
+from flask_login import login_user, login_required, current_user
 from datetime import datetime
 
 # The Blueprint object is created with the name 'main' to represent the main routes of the application.
@@ -342,11 +342,24 @@ def products():
 
 @main.route('/cart')
 @token_required
+@login_required
 def view_cart(user_id):
     """View cart contents."""
-    cart_items = CartItem.query.filter_by(user_id=user_id).all()
+    cart_items = CartItem.query.filter_by(user_id=current_user.id).all()
     total = sum(item.quantity * item.product.price for item in cart_items)
-    return render_template('customer/cart.html', cart_items=cart_items, total=total)
+    return render_template('cart.html', cart_items=cart_items, total=total)
+
+
+@main.route('/cart/count')
+@token_required
+@login_required
+def get_cart_count(user_id):
+    """Get count of items in cart."""
+    count = CartItem.query.filter_by(user_id=current_user.id).with_entities(
+        db.func.sum(CartItem.quantity)
+    ).scalar() or 0
+    return jsonify({'count': int(count)})
+
 
 @main.route('/cart/update', methods=['POST'])
 @token_required
@@ -429,29 +442,44 @@ def place_order(user_id):
 # add the add to cart route
 @main.route('/cart/add', methods=['POST'])
 @csrf.exempt
+@login_required
 @token_required
 def add_to_cart(user_id):
-    """Add a product to the cart."""
-    data = request.get_json()
-    ws_code = data.get('ws_code')
-    quantity = data.get('quantity', 1)
+    try:
+        """Add a product to the cart."""
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+
+        ws_code = data.get('ws_code')
+        quantity = data.get('quantity', 1)
+        
+        if not ws_code:
+            return jsonify({'error': 'WS code is required'}), 400
+        if not isinstance(quantity, int) or quantity < 1:
+            return jsonify({'error': 'Quantity must be a positive integer'}), 400
+
+        product = Product.query.filter_by(ws_code=ws_code).first()
+        if not product:
+            return jsonify({'error': 'Product not found'}), 404
+        
+        cart_item = CartItem.query.filter_by(
+            user_id=current_user.id, ws_code=ws_code
+        ).first()
+        
+        if cart_item:
+            cart_item.quantity += quantity
+        else:
+            cart_item = CartItem(user_id=current_user.id, ws_code=ws_code, quantity=quantity, created_at=datetime.utcnow())
+            db.session.add(cart_item)
+        
+        db.session.commit()
+        return jsonify({'message': 'Product added to cart'})
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 400
     
-    product = Product.query.filter_by(ws_code=ws_code).first()
-    if not product:
-        return jsonify({'error': 'Product not found'}), 404
-    
-    cart_item = CartItem.query.filter_by(
-        user_id=user_id, ws_code=ws_code
-    ).first()
-    
-    if cart_item:
-        cart_item.quantity += quantity
-    else:
-        cart_item = CartItem(user_id=user_id, ws_code=ws_code, quantity=quantity, created_at=datetime.utcnow())
-        db.session.add(cart_item)
-    
-    db.session.commit()
-    return jsonify({'message': 'Product added to cart'})
     # try:
     #     db.session.commit()
     #     return jsonify({'message': 'Product added to cart'})
