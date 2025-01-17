@@ -65,7 +65,16 @@
           >
         </li>
 
-        <li><a href="#contact">Contact</a></li>
+        <!-- When the user clicks on contact then he should be redirected to contacts route -->
+        <li>
+          <a
+            href="{{ url_for('main.contacts') }}"
+            class="{{ 'active' if request.endpoint == 'main.contacts' }}"
+            >Contact</a
+          >
+        </li>
+
+
       </ul>
       <div class="auth-section">
         {% if current_user.is_authenticated %}

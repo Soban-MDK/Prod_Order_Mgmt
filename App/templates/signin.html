@@ -1,108 +1,122 @@
-{% extends 'base.html' %}
-
-{% block title %}Sign In{% endblock %}
-
-{% block head %}
-{{ super() }}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/toast.css') }}">
-{% endblock %}
-
-{% block content %}
-<div class="container" id="container" style="margin: 10px auto; overflow: hidden; box-shadow: 0 14px 28px rgba(0, 0, 0, 0.25), 0 10px 10px rgba(0, 0, 0, 0.22);">
-    <div class="form-container sign-in-container">
-        <form method="POST" id="signinForm">
-            {{ form.hidden_tag() }}
-            <h1>Sign In</h1>
-            <div class="social-container">
-                <a href="#" class="social"><i class="fab fa-facebook-f"></i></a>
-                <a href="#" class="social"><i class="fab fa-google-plus-g"></i></a>
-                <a href="#" class="social"><i class="fab fa-linkedin-in"></i></a>
-            </div>
-            <span>or use your account</span>
-            <div class="form-group">
-                {{ form.email(class="form-control", placeholder="Email", size=32) }}
-                <span class="error" id="emailError"></span>
-            </div>
-            <div class="form-group">
-                {{ form.password(class="form-control", placeholder="Password", size=32) }}
-                <span class="error" id="passwordError"></span>
-            </div>
-            <a href="#">Forgot your password?</a>
-            <button type="submit" class="button">Sign In</button>
-        </form>
+{% extends 'base.html' %} {% block title %}Sign In{% endblock %} {% block head
+%} {{ super() }}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css/toast.css') }}"
+/>
+{% endblock %} {% block content %}
+<div
+  class="container"
+  id="container"
+  style="
+    margin: 10px auto;
+    overflow: hidden;
+    box-shadow: 0 14px 28px rgba(0, 0, 0, 0.25), 0 10px 10px rgba(0, 0, 0, 0.22);
+  "
+>
+  <div class="form-container sign-in-container">
+    <form method="POST" id="signinForm">
+      {{ form.hidden_tag() }}
+      <h1>Sign In</h1>
+      <div class="social-container">
+        <a href="#" class="social"><i class="fab fa-facebook-f"></i></a>
+        <a href="#" class="social"><i class="fab fa-google-plus-g"></i></a>
+        <a href="#" class="social"><i class="fab fa-linkedin-in"></i></a>
+      </div>
+      <span id="spanid">or use your account</span>
+      <div class="form-group">
+        {{ form.email(class="form-control", placeholder="Email", size=32) }}
+        <span class="error" id="emailError"></span>
+      </div>
+      <div class="form-group">
+        {{ form.password(class="form-control", placeholder="Password", size=32)
+        }}
+        <span class="error" id="passwordError"></span>
+      </div>
+      <a href="#" id="forgot">Forgot your password?</a>
+      <div>
+        <button type="submit" class="button">Sign In</button>
+      </div>
+    </form>
+  </div>
+  <div class="overlay-container">
+    <div class="overlay">
+      <div class="overlay-panel overlay-right">
+        <h1>Hello, Friend!</h1>
+        <p>Enter your personal details and start your journey with us</p>
+        <a href="{{ url_for('main.signup') }}"
+          ><button type="button" class="ghost">Sign Up</button></a
+        >
+      </div>
     </div>
-    <div class="overlay-container">
-        <div class="overlay">
-            <div class="overlay-panel overlay-right">
-                <h1>Hello, Friend!</h1>
-                <p>Enter your personal details and start your journey with us</p>
-                <a href="{{ url_for('main.signup') }}"><button type="button" class="ghost">Sign Up</button></a>
-            </div>
-        </div>
-    </div>
+  </div>
 </div>
 
 <div id="toast" class="toast"></div>
 
 <script>
-function showToast(message, type) {
-    const toast = document.getElementById('toast');
+  function showToast(message, type) {
+    const toast = document.getElementById("toast");
     toast.textContent = message;
     toast.className = `toast ${type}`;
-    
+
     // Trigger reflow
     toast.offsetHeight;
-    
-    toast.classList.add('show');
-    
-    setTimeout(() => {
-        toast.classList.remove('show');
-    }, 3000);
-}
 
-document.getElementById('signinForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const formData = new FormData(e.target);
-    
-    try {
-        const response = await fetch('/signin', {
-            method: 'POST',
-            body: formData,
-            credentials: 'same-origin'
+    toast.classList.add("show");
+
+    setTimeout(() => {
+      toast.classList.remove("show");
+    }, 3000);
+  }
+
+  document
+    .getElementById("signinForm")
+    .addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+
+      try {
+        const response = await fetch("/signin", {
+          method: "POST",
+          body: formData,
+          credentials: "same-origin",
         });
-        
+
         const data = await response.json();
-        
+
         if (response.ok) {
-            // Store token in localStorage
-            localStorage.setItem('auth_token', data.token);
-            
-            // Show success message
-            showToast(data.message, 'success');
-            
-            // Wait for toast animation before redirecting
-            setTimeout(() => {
-                window.location.href = data.redirect;
-            }, 1500);
+          // Store token in localStorage
+          localStorage.setItem("auth_token", data.token);
+
+          // Show success message
+          showToast(data.message, "success");
+
+          // Wait for toast animation before redirecting
+          setTimeout(() => {
+            window.location.href = data.redirect;
+          }, 1500);
         } else {
-            // Clear previous errors
-            document.querySelectorAll('.error').forEach(el => el.textContent = '');
-            
-            if (data.errors) {
-                Object.entries(data.errors).forEach(([field, errors]) => {
-                    const errorElement = document.getElementById(`${field}Error`);
-                    if (errorElement) {
-                        errorElement.textContent = errors[0];
-                    }
-                });
-            } else {
-                showToast(data.message || 'An error occurred', 'error');
-            }
+          // Clear previous errors
+          document
+            .querySelectorAll(".error")
+            .forEach((el) => (el.textContent = ""));
+
+          if (data.errors) {
+            Object.entries(data.errors).forEach(([field, errors]) => {
+              const errorElement = document.getElementById(`${field}Error`);
+              if (errorElement) {
+                errorElement.textContent = errors[0];
+              }
+            });
+          } else {
+            showToast(data.message || "An error occurred", "error");
+          }
         }
-    } catch (error) {
-        console.error('Error:', error);
-        showToast('An error occurred while signing in', 'error');
-    }
-});
+      } catch (error) {
+        console.error("Error:", error);
+        showToast("An error occurred while signing in", "error");
+      }
+    });
 </script>
 {% endblock %}

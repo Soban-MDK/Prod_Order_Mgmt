@@ -453,18 +453,18 @@ body {
   }
   
   
-  .contact_section .form_contaier form .form-group {
+  .contact_section .form_contaier form .form-group2 {
     margin-bottom: 20px;
   }
   
-  .contact_section .form_contaier form .form-control {
+  .contact_section .form_contaier form .form-control2 {
     border-radius: 0;
     height: 35px;
     -webkit-box-shadow: none;
             box-shadow: none;
   }
   
-  .contact_section .form_contaier form .form-control#exampleInputMessage {
+  .contact_section .form_contaier form .form-control2#exampleInputMessage {
     height: 100px;
   }
   

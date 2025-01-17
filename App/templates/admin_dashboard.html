@@ -1,29 +1,116 @@
-{% extends 'base2.html' %}
+{% extends 'base3.html' %} {% block extra_css %}
+<style>
+  .admin-container {
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 2rem;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+  }
+  .admin-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+  }
+  .admin-title {
+    font-size: 2rem;
+    color: #333;
+  }
+  .admin-actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-top: 2rem;
+  }
+  .admin-card {
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 8px;
+    text-align: center;
+    transition: transform 0.2s;
+  }
+  .admin-card:hover {
+    transform: translateY(-5px);
+  }
+  .admin-btn {
+    display: inline-block;
+    padding: 1rem 2rem;
+    border-radius: 5px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s;
+  }
+  .btn-primary {
+    background: #007bff;
+    color: white;
+  }
+  .btn-danger {
+    background: #dc3545;
+    color: white;
+  }
+  .logout-btn {
+    padding: 0.5rem 1rem;
+    background: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+</style>
 
+{% endblock %} 
 {% block content %}
-<div class="container mt-5">
-    <h1 class="mb-4">Welcome, {{ admin.admin_name }}!</h1>
-    <p>You are logged in as an administrator.</p>
-
-    <div class="row mt-4">
-        <div class="col-md-4">
-            <a href="{{ url_for('main.manage_products') }}" class="btn btn-primary btn-lg btn-block mb-3">Manage Products</a>
-        </div>
-        <div class="col-md-4">
-            <a href="{{ url_for('main.manage_orders') }}" class="btn btn-primary btn-lg btn-block mb-3">Manage Orders</a>
-        </div>
-        <div class="col-md-4">
-            <button onclick="logout()" class="btn btn-danger btn-lg btn-block">Logout</button>
-        </div>
+<div class="admin-dashboard">
+    <h1>Welcome, {{ admin.admin_email }}</h1>
+    <div class="dashboard-buttons">
+        <a href="{{ url_for('main.manage_products') }}" class="dashboard-btn">
+            <i class="fas fa-box"></i>
+            Manage Products
+        </a>
+        <a href="{{ url_for('main.manage_orders') }}" class="dashboard-btn">
+            <i class="fas fa-shopping-cart"></i>
+            Manage Orders
+        </a>
+        <button onclick=adminLogout() class="dashboard-btn logout-btn">
+            <i class="fas fa-sign-out-alt"></i>
+            Logout
+        </button>
     </div>
-    
 </div>
 
 <script>
-function logout() {
-    localStorage.removeItem('admin_token');
-    document.cookie = 'access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-    window.location.href = '/admin/signin';
-}
-</script>
+    function adminLogout() {
+        const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        
+        fetch('/admin/logout', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': token,
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            credentials: 'same-origin'
+        })
+        .then((response) => {
+            if (response.redirected) {
+                window.location.href = response.url;
+            } else {
+                window.location.href = "/admin/signin";
+            }
+        })
+        .catch((error) => {
+            console.error("Error:", error);
+            alert("An error occurred during logout.");
+        });
+    }
+    
+    // Prevent back button after logout
+    window.addEventListener("load", function () {
+        if (performance.navigation.type === 2) {
+            location.reload(true);
+        }
+    });
+    </script>
 {% endblock %}

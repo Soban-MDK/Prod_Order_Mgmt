@@ -1,8 +1,9 @@
 import os
 import json
+
 import jwt
 from werkzeug.utils import secure_filename
-from flask import Blueprint, render_template, request, jsonify, make_response, redirect, url_for, current_app, flash
+from flask import Blueprint, render_template, request, jsonify, make_response, redirect, url_for, current_app, flash, session
 from .forms import SigninForm, SignupForm, AdminSigninForm, ProductForm
 from functools import wraps
 from flask_wtf import FlaskForm
@@ -45,6 +46,10 @@ def save_product_images(files, ws_code):
 @main.route('/')
 def home():
     return render_template('home.html', title='Home')
+
+@main.route('/contacts')
+def contacts():
+    return render_template('contacts.html', title='Contact Us')
 
 # Signup Route
 @main.route('/signup', methods=['GET', 'POST'])
@@ -656,4 +661,14 @@ def logout():
     logout_user()
     response = make_response(redirect(url_for('main.home')))
     response.delete_cookie('access_token')
+    return response
+
+@main.route('/admin/logout', methods=['POST'])
+@admin_required
+def admin_logout(user_id):
+    logout_user()
+    session.clear()
+    response = make_response(redirect(url_for('main.admin_signin')))
+    response.delete_cookie('access_token', domain=None, path='/')
+    response.delete_cookie('session', domain=None, path='/')
     return response

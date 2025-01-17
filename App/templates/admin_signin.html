@@ -1,92 +1,101 @@
-{% extends 'base2.html' %}
-
-{% block title %}Admin Sign In{% endblock %}
-
-{% block head %}
-{{ super() }}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/toast.css') }}">
-{% endblock %}
-
-{% block content %}
-<div class="container" id="container" style="max-width: 975px;">
-    <div class="form-container sign-in-container">
-        <form method="POST" id="adminSigninForm">
-            {{ form.hidden_tag() }}
-            <h1>Admin Sign In</h1>
-            <div class="form-group">
-                {{ form.admin_email(class="form-control", placeholder="Admin Email", size=32) }}
-                <span class="error" id="emailError"></span>
-            </div>
-            <div class="form-group">
-                {{ form.password(class="form-control", placeholder="Password", size=32) }}
-                <span class="error" id="passwordError"></span>
-            </div>
-            <button type="submit" class="button">Sign In</button>
-        </form>
+{% extends 'base2.html' %} {% block title %}Admin Sign In{% endblock %} {% block
+head %} {{ super() }}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css/toast.css') }}"
+/>
+{% endblock %} {% block content %}
+<div
+  class="container"
+  id="container"
+  style="max-width: 975px; overflow: hidden"
+>
+  <div class="form-container sign-in-container" , style="top: 25%">
+    <form method="POST" id="adminSigninForm">
+      {{ form.hidden_tag() }}
+      <h1>Admin Sign In</h1>
+      <div class="form-group">
+        {{ form.admin_email(class="form-control", placeholder="Admin Email",
+        size=32) }}
+        <span class="error" id="emailError"></span>
+      </div>
+      <div class="form-group">
+        {{ form.password(class="form-control", placeholder="Password", size=32)
+        }}
+        <span class="error" id="passwordError"></span>
+      </div>
+      <div>
+        <button type="submit" class="button">Sign In</button>
+      </div>
+    </form>
+  </div>
+  <div class="overlay-container">
+    <div class="overlay">
+      <div class="overlay-panel overlay-right">
+        <h1>Welcome Admin!</h1>
+        <p>Please sign in with your admin credentials</p>
+      </div>
     </div>
-    <div class="overlay-container">
-        <div class="overlay">
-            <div class="overlay-panel overlay-right">
-                <h1>Welcome Admin!</h1>
-                <p>Please sign in with your admin credentials</p>
-            </div>
-        </div>
-    </div>
+  </div>
 </div>
 
 <div id="toast" class="toast"></div>
 
 <script>
-function showToast(message, type) {
-    const toast = document.getElementById('toast');
+  function showToast(message, type) {
+    const toast = document.getElementById("toast");
     toast.textContent = message;
     toast.className = `toast ${type}`;
     toast.offsetHeight;
-    toast.classList.add('show');
-    
-    setTimeout(() => {
-        toast.classList.remove('show');
-    }, 3000);
-}
+    toast.classList.add("show");
 
-document.getElementById('adminSigninForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const formData = new FormData(e.target);
-    
-    try {
-        const response = await fetch('/admin/signin', {
-            method: 'POST',
-            body: formData,
-            credentials: 'same-origin'
+    setTimeout(() => {
+      toast.classList.remove("show");
+    }, 3000);
+  }
+
+  document
+    .getElementById("adminSigninForm")
+    .addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+
+      try {
+        const response = await fetch("/admin/signin", {
+          method: "POST",
+          body: formData,
+          credentials: "same-origin",
         });
-        
+
         const data = await response.json();
-        
+
         if (response.ok) {
-            localStorage.setItem('admin_token', data.token);
-            showToast(data.message, 'success');
-            
-            setTimeout(() => {
-                window.location.href = data.redirect;
-            }, 1500);
+          localStorage.setItem("admin_token", data.token);
+          showToast(data.message, "success");
+
+          setTimeout(() => {
+            window.location.href = data.redirect;
+          }, 1500);
         } else {
-            document.querySelectorAll('.error').forEach(el => el.textContent = '');
-            
-            if (data.errors) {
-                Object.entries(data.errors).forEach(([field, errors]) => {
-                    const errorElement = document.getElementById(`${field}Error`);
-                    if (errorElement) {
-                        errorElement.textContent = errors[0];
-                    }
-                });
-            } else {
-                showToast(data.message || 'An error occurred', 'error');
-            }
+          document
+            .querySelectorAll(".error")
+            .forEach((el) => (el.textContent = ""));
+
+          if (data.errors) {
+            Object.entries(data.errors).forEach(([field, errors]) => {
+              const errorElement = document.getElementById(`${field}Error`);
+              if (errorElement) {
+                errorElement.textContent = errors[0];
+              }
+            });
+          } else {
+            showToast(data.message || "An error occurred", "error");
+          }
         }
-    } catch (error) {
-        console.error('Error:', error);
-        showToast('An error occurred while signing in', 'error');
-    }
-});
+      } catch (error) {
+        console.error("Error:", error);
+        showToast("An error occurred while signing in", "error");
+      }
+    });
 </script>
 {% endblock %}

@@ -19,8 +19,8 @@ body {
     align-items: center;
     flex-direction: column;
     font-family: 'Montserrat', sans-serif;
-    min-height: 10vh;
-    margin: 0;  /* Remove the negative margin */
+    min-height: 100vh;
+    margin: 0px 0px 50px;
     padding: 20px;  /* Add padding instead */
     width: 100%;
 }
@@ -80,14 +80,25 @@ button.ghost {
 }
 
 form {
+    background-color: #ffffff;
     padding: 0 5%;  /* Change from fixed padding to percentage */
     width: 100%;
-    /* height: 100%; */
+    text-align: center;
+    height: 100%;
     display: inline;
     align-items: center;
     justify-content: center;
     flex-direction: column;
 }
+
+.form-container {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  transition: all 0.6s ease-in-out;
+  width: 50%;
+}
+
 
 input {
 	background-color: #eee;
@@ -95,6 +106,33 @@ input {
 	padding: 12px 15px;
 	margin: 8px 0;
 	width: 100%;
+}
+
+.container {
+  display: block;
+  background-color: #fff;
+  border-radius: 10px;
+  /* box-shadow: 0 14px 28px rgba(0,0,0,0.25), 
+              0 10px 10px rgba(0,0,0,0.22); */
+  position: relative;
+  overflow-y: scroll;
+  width: 100%;  /* Changed from fixed width to percentage */
+  max-width: 100%;  /* Add a max-width for very large screens */
+  min-height: 480px;
+  width: 975px;
+} 
+
+.sign-in-container, .sign-up-container {
+  width: 50%;
+  left: 0;
+}
+
+.sign-in-container{
+  z-index: 2;
+}
+
+.sign-up-container{
+  z-index: 1;
 }
 
 .profile-dropdown {
@@ -380,43 +418,12 @@ input {
     background-color: transparent;
     color: #2c2c2c;
   }
-  
 
-.container {
-    display: block;
-    background-color: #fff;
-    border-radius: 10px;
-    /* box-shadow: 0 14px 28px rgba(0,0,0,0.25), 
-                0 10px 10px rgba(0,0,0,0.22); */
-    position: relative;
-    overflow-y: scroll;
-    width: 100%;  /* Changed from fixed width to percentage */
-    max-width: 100%;  /* Add a max-width for very large screens */
-    min-height: 480px;
-    width: 975px;
-}
 
-.form-container {
-    position: absolute;
-    top: 0;
-    height: 100%;
-    transition: all 0.6s ease-in-out;
-    width: 50%;  /* Make sure width is explicitly set */
-}
 
-.sign-in-container, .sign-up-container {
-    width: 50%;  /* Ensure consistent width */
-}
 
 .container.right-panel-active .sign-in-container {
 	transform: translateX(100%);
-}
-
-.sign-up-container {
-	left: 0;
-	width: 50%;
-	opacity: 0;
-	z-index: 1;
 }
 
 .container.right-panel-active .sign-up-container {
@@ -651,8 +658,16 @@ button:active {
     width: 100%;
 }
 
+#forgot{
+  display: block;
+}
+
+#spanid{
+  margin-left: 75px;
+}
+
 .form-control {
-    width: 100%;
+    width: 75%;
     padding: 12px 15px;
     margin: 8px 0;
     border: 1px solid #ddd;
