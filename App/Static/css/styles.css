@@ -12,6 +12,56 @@
     /* overflow: hidden; */
 }
 
+.search-container {
+  position: relative;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.search-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #ddd;
+  border-top: none;
+  border-radius: 0 0 4px 4px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  display: none;
+  z-index: 1000;
+}
+
+.suggestion-item {
+  padding: 10px 15px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #eee;
+}
+
+.suggestion-item:last-child {
+  border-bottom: none;
+}
+
+.suggestion-item:hover {
+  background-color: #f5f5f5;
+}
+
+.suggestion-name {
+  font-weight: 500;
+}
+
+.suggestion-ws-code {
+  color: #666;
+  font-size: 0.9em;
+}
+
+.suggestion-price {
+  color: #e67e22;
+}
+
 body {
     /* background: #f6f5f7; */
     display: flex;
@@ -80,7 +130,7 @@ button.ghost {
 }
 
 form {
-    background-color: #ffffff;
+    /* background-color: #ffffff; */
     padding: 0 5%;  /* Change from fixed padding to percentage */
     width: 100%;
     text-align: center;

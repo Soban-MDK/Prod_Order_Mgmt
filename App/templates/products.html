@@ -2,12 +2,20 @@
 {% block content %}
 <div class="container" style="max-width: 1600px; width: 80%; overflow: hidden;">
     <div class="search-section">
-        <form method="GET" action="{{ url_for('main.products') }}" class="search-form">
-            <input type="text" name="search" value="{{ search }}" placeholder="Search products..." class="search-input"/>
-            <button type="submit" class="search-button">Search</button>
-        </form>
+        <div class="search-container">
+            <input type="text" 
+                   id="searchInput" 
+                   name="search" 
+                   value="{{ search }}" 
+                   placeholder="Search products..." 
+                   class="search-input"
+                   autocomplete="off"/>
+            <button id="searchButton" class="search-button">
+                <i class="fas fa-search"></i>
+            </button>
+            <div id="searchSuggestions" class="search-suggestions"></div>
+        </div>
     </div>
-
     <div class="products-grid">
         {% for product in products.items %}
         <div class="product-card">
@@ -200,6 +208,37 @@
     border-radius: 4px;
 }
 
+.search-container {
+    position: relative;
+    max-width: 600px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.search-input {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 16px;
+}
+
+.search-button {
+    padding: 10px 20px;
+    background: #e67e22;
+    border: none;
+    border-radius: 4px;
+    color: white;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.search-button:hover {
+    background: #d35400;
+}
+
 .add-to-cart-btn {
     flex: 1;
     background: #e67e22;
@@ -310,6 +349,11 @@
   document.querySelector('.close').onclick = function() {
       document.getElementById('imageGalleryModal').style.display = 'none';
   }
+
+  document.getElementById('searchButton').addEventListener('click', function() {
+    const query = searchInput.value.trim();
+    window.location.href = `/products${query ? '?search=' + encodeURIComponent(query) : ''}`;
+});
   
   window.onclick = function(event) {
       const modal = document.getElementById('imageGalleryModal');
@@ -357,5 +401,72 @@
         }
     });
 });
+
+const searchInput = document.getElementById('searchInput');
+const suggestionsDiv = document.getElementById('searchSuggestions');
+let debounceTimer;
+
+searchInput.addEventListener('input', function() {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+        const query = this.value.trim();
+        if (query.length < 1) {
+            suggestionsDiv.style.display = 'none';
+            // Redirect to products page without search parameter
+            window.location.href = '/products';
+            return;
+        }
+        
+        fetch(`/api/search-suggestions?q=${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(suggestions => {
+                if (suggestions.length === 0) {
+                    suggestionsDiv.style.display = 'none';
+                    return;
+                }
+                
+                suggestionsDiv.innerHTML = suggestions.map(item => `
+                    <div class="suggestion-item" onclick="selectSuggestion('${item.url}')">
+                        <div>
+                            <div class="suggestion-name">${item.name}</div>
+                            <div class="suggestion-ws-code">WS Code: ${item.ws_code}</div>
+                        </div>
+                        <div class="suggestion-price">₹${item.price}</div>
+                    </div>
+                `).join('');
+                
+                suggestionsDiv.style.display = 'block';
+            })
+            .catch(error => console.error('Error fetching suggestions:', error));
+    }, 300);
+});
+
+// Add keyboard event handler for Enter key
+searchInput.addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        const query = this.value.trim();
+        window.location.href = `/products${query ? '?search=' + encodeURIComponent(query) : ''}`;
+    }
+});
+
+// Hide suggestions when clicking outside
+document.addEventListener('click', function(e) {
+    if (!searchInput.contains(e.target) && !suggestionsDiv.contains(e.target)) {
+        suggestionsDiv.style.display = 'none';
+    }
+});
+
+function selectSuggestion(url) {
+    window.location.href = url;
+}
+
+// Prevent form submission on enter
+searchInput.closest('form')?.addEventListener('submit', function(e) {
+    if (suggestionsDiv.style.display === 'block') {
+        e.preventDefault();
+    }
+});
+
   </script>
 {% endblock %}

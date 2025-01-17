@@ -7,7 +7,7 @@
         <h2>Manage Products</h2>
         <a href="{{ url_for('main.add_product') }}" class="add-btn">Add New Product</a>
     </div>
-
+<div>
     <form method="GET" action="{{ url_for('main.manage_products') }}" class="search-container">
         <div class="search-wrapper">
             <input 
@@ -22,7 +22,7 @@
             </button>
         </div>
     </form>
-
+</div>
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
             {% for category, message in messages %}
@@ -234,6 +234,7 @@
 
     .search-wrapper {
         display: flex;
+        margin: 0px auto;
         align-items: center;
         max-width: 900px;
         width: 750px;

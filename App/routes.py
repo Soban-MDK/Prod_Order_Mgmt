@@ -1,19 +1,32 @@
 import os
 import json
-
+import pandas as pd
+import plotly.graph_objects as go
+import plotly.express as px
+import plotly
+import plotly.utils
 import jwt
+
+from datetime import datetime, timedelta
 from werkzeug.utils import secure_filename
 from flask import Blueprint, render_template, request, jsonify, make_response, redirect, url_for, current_app, flash, session
-from .forms import SigninForm, SignupForm, AdminSigninForm, ProductForm
 from functools import wraps
 from flask_wtf import FlaskForm
-from .models import User, db, Admin, Product, CartItem, Order, OrderItem
 from flask_bcrypt import Bcrypt
-from .auth_decorators import generate_token
 from flask_wtf.csrf import CSRFProtect
-from .auth_decorators import token_required, admin_required
 from flask_login import login_user, login_required, current_user, logout_user
-from datetime import datetime
+
+from .forms import SigninForm, SignupForm, AdminSigninForm, ProductForm
+from .models import User, db, Admin, Product, CartItem, Order, OrderItem
+from .auth_decorators import generate_token
+from .auth_decorators import token_required, admin_required
+from .analysis import (
+    get_order_data, get_order_item_data,
+    generate_status_pie_chart, generate_amount_bar_chart,
+    generate_trend_line_chart, generate_product_sales_chart,
+    generate_daily_sales_chart
+)
+
 
 # The Blueprint object is created with the name 'main' to represent the main routes of the application.
 main = Blueprint('main', __name__) 
@@ -117,6 +130,29 @@ def signin():
 def about():
     return render_template('about.html')
 
+@main.route('/api/search-suggestions')
+def search_suggestions():
+    """Get search suggestions as user types."""
+    query = request.args.get('q', '').strip()
+    if len(query) < 1:
+        return jsonify([])
+        
+    suggestions = Product.query.filter(
+        db.or_(
+            Product.name.ilike(f'%{query}%'),
+            Product.ws_code.ilike(f'%{query}%')
+        )
+    ).limit(5).all()
+    
+    results = [{
+        'name': product.name,
+        'ws_code': product.ws_code,
+        'price': str(product.price),
+        'url': url_for('main.products', search=product.name)
+    } for product in suggestions]
+    
+    return jsonify(results)
+
 # Products Page Route
 @main.route('/products')
 def products():
@@ -180,15 +216,31 @@ def admin_signin():
     return render_template('admin_signin.html', form=form)
 
 
-# Admin Dashboard Route
 @main.route('/admin/dashboard')
 @admin_required
 def admin_dashboard(user_id):
-    """Admin dashboard with two buttons."""
     admin = Admin.query.get(user_id)
     if not admin:
         return jsonify({'message': 'Not authorized as admin!'}), 403
-    return render_template('admin_dashboard.html', admin=admin)
+
+    stats = {
+        'total_users': User.query.count(),
+        'total_products': Product.query.count(),
+        'total_orders': Order.query.count()
+    }
+
+    order_df = get_order_data()
+    order_item_df = get_order_item_data()
+
+    stats['plots'] = {
+        'status_pie': generate_status_pie_chart(order_df),
+        'amount_bar': generate_amount_bar_chart(order_df),
+        'trend_line': generate_trend_line_chart(order_df),
+        'product_sales': generate_product_sales_chart(order_item_df),
+        'daily_sales': generate_daily_sales_chart(order_item_df)
+    }
+
+    return render_template('admin_dashboard.html', stats=stats, admin=admin)
 
 
 @main.route('/manage_products')
