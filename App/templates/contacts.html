@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+
+{% block title %}Home - MedKart{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/styles2.css') }}">
+<style>
+  body{
+    overflow: hidden;
+  }
+</style>
+{% endblock %}
+
+{% block content %}

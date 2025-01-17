@@ -205,6 +205,8 @@
 </style>
 
 <script>
+// Replace the existing updateQuantity and removeItem functions with:
+
 async function updateQuantity(wsCode, change) {
     try {
         const input = document.querySelector(`.quantity-input[data-ws-code="${wsCode}"]`);
@@ -232,6 +234,7 @@ async function updateQuantity(wsCode, change) {
         const data = await response.json();
         
         if (response.ok) {
+            await updateCartCount(); // Add this line
             location.reload();
         } else {
             throw new Error(data.error || 'Error updating cart');
@@ -241,7 +244,6 @@ async function updateQuantity(wsCode, change) {
         alert(error.message || 'Error updating cart');
     }
 }
-
 
 async function removeItem(wsCode) {
     try {
@@ -263,6 +265,7 @@ async function removeItem(wsCode) {
         const data = await response.json();
         
         if (response.ok) {
+            await updateCartCount(); // Add this line
             location.reload();
         } else {
             throw new Error(data.error || 'Error removing item');

@@ -108,6 +108,10 @@ def signin():
     return render_template('signin.html', form=form)
 
 
+@main.route('/about')
+def about():
+    return render_template('about.html')
+
 # Products Page Route
 @main.route('/products')
 def products():
@@ -555,13 +559,15 @@ def add_to_cart(user_id):
     #     return jsonify({'error': str(e)}), 500
 
 @main.route('/orders')
-@token_required
 @login_required
-def view_orders(user_id):
-    """View user's orders."""
+@token_required
+def orders(user_id):
+    page = request.args.get('page', 1, type=int)
+    per_page = 10
     orders = Order.query.filter_by(user_id=current_user.id)\
         .order_by(Order.order_date.desc())\
-        .all()
+        .paginate(page=page, per_page=per_page, error_out=False)
+    
     return render_template('orders.html', orders=orders)
 
 

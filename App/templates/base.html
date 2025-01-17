@@ -46,8 +46,25 @@
             >Products</a
           >
         </li>
-        <li><a href="#about">About</a></li>
-        <li><a href="#why-generic">Why Generic</a></li>
+
+        <!-- I have a file named about.html in the templates folder which I want to include here -->
+        <li>
+          <a
+            href="{{ url_for('main.about') }}"
+            class="{{ 'active' if request.endpoint == 'main.about' }}"
+            >About</a
+          >
+        </li>
+
+        <!-- When the user clicks on Why generic he should be redirected to https://youtube.com/shorts/o6-UtWI5pLA?si=w0V8KL2qCtS5-OEX -->
+        <li>
+          <a
+            href="https://youtube.com/shorts/o6-UtWI5pLA?si=w0V8KL2qCtS5-OEX"
+            class="{{ 'active' if request.endpoint == 'main.why_generic' }}"
+            >Why Generic</a
+          >
+        </li>
+
         <li><a href="#contact">Contact</a></li>
       </ul>
       <div class="auth-section">
@@ -78,13 +95,17 @@
           </div>
           <div class="dropdown-content" id="profileDropdown">
             <span>{{ current_user.name }}</span>
-            <a href="{{ url_for('main.view_orders') }}">My Orders</a>
+            <a href="{{ url_for('main.orders') }}">My Orders</a>
             <a href="{{ url_for('main.logout') }}">Logout</a>
           </div>
         </div>
         {% else %}
-        <a href="{{ url_for('main.signin') }}" style="padding: 15px 30px;">Sign In</a>
-        <a href="{{ url_for('main.signup') }}" style="padding: 15px 30px;">Sign Up</a>
+        <a href="{{ url_for('main.signin') }}" style="padding: 15px 30px"
+          >Sign In</a
+        >
+        <a href="{{ url_for('main.signup') }}" style="padding: 15px 30px"
+          >Sign Up</a
+        >
         {% endif %}
       </div>
     </nav>
@@ -94,17 +115,32 @@
     {% block scripts %}{% endblock %}
   </body>
 
-  
+<!-- Update the script section -->
 <script>
-    function toggleDropdown() {
-        document.getElementById('profileDropdown').classList.toggle('show');
+  document.addEventListener('DOMContentLoaded', async function() {
+    if ( {{current_user.is_authenticated}} ) {
+      await updateCartCount();
     }
+  });
+
+
+  async function updateCartCount() {
+    try {
+      const response = await fetch('/cart/count');
+      const data = await response.json();
+      document.querySelector('.cart-count').textContent = data.count;
+    } catch (error) {
+      console.error('Error updating cart count:', error);
+    }
+  }
+
+  function toggleDropdown() {
+    document.getElementById("profileDropdown").classList.toggle("show");
+  }
 </script>
 </html>
 
 <style>
-
-
   .main-content {
     margin-top: 83px; /* Adjust based on navbar height */
     min-height: calc(100vh - 120px);

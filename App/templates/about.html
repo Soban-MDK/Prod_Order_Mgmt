@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+
+{% block title %}Home - MedKart{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/styles2.css') }}">
+<style>
+  body{
+    overflow: hidden;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div>
+  <!-- about section -->
+  <section class="about_section layout_padding2">
+    <div class="container2">
+      <div class="custom_heading-container ">
+        <h2>
+          About Us
+        </h2>
+      </div>
+
+      <div class="img-box">
+        <img src="{{ url_for('static', filename='images/about-medicine.png') }}" alt="">
+      </div>
+      <div class="detail-box">
+        <p>
+          It is a long established fact that a reader will be distracted by the readable content of a page when looking
+          at its layout. The point of using Lorem Ipsum is that it has a more-or-less normal distribution of letters, as
+          opposed to using 'Content here, content here', making it
+        </p>
+        <div class="d-flex justify-content-center">
+          <a href="">
+            Read More
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- end info section -->
+
+  <!-- footer section -->
+  <section class="container-fluid footer_section">
+    <p>
+      &copy; 2019 All Rights Reserved. Design by
+      <a href="https://html.design/">Free Html Templates</a>
+    </p>
+  </section>
+</div>
+  <!-- footer section -->
+
+</div>
+{% endblock %}
+

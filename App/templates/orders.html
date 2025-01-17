@@ -38,6 +38,28 @@
                 {% endfor %}
             </tbody>
         </table>
+
+        <div class="pagination">
+            {% if orders.has_prev %}
+                <a href="{{ url_for('main.orders', page=orders.prev_num) }}" class="page-link">&laquo; Previous</a>
+            {% endif %}
+            
+            {% for page_num in orders.iter_pages(left_edge=2, left_current=2, right_current=3, right_edge=2) %}
+                {% if page_num %}
+                    {% if page_num == orders.page %}
+                        <span class="page-link active">{{ page_num }}</span>
+                    {% else %}
+                        <a href="{{ url_for('main.orders', page=page_num) }}" class="page-link">{{ page_num }}</a>
+                    {% endif %}
+                {% else %}
+                    <span class="page-link dots">...</span>
+                {% endif %}
+            {% endfor %}
+            
+            {% if orders.has_next %}
+                <a href="{{ url_for('main.orders', page=orders.next_num) }}" class="page-link">Next &raquo;</a>
+            {% endif %}
+        </div>
     </div>
 
     <!-- Order Details Modal -->
@@ -59,7 +81,6 @@
 
 <style>
 .orders-container {
-    max-width: 1200px;
     margin: 20px auto;
     padding: 20px;
 }
@@ -74,6 +95,55 @@
 table {
     width: 100%;
     border-collapse: collapse;
+}
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px 0;
+    gap: 5px;
+}
+
+.page-link {
+    padding: 8px 12px;
+    border: 1px solid #dee2e6;
+    color: #007bff;
+    text-decoration: none;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+}
+
+.page-link:hover {
+    background-color: #f8f9fa;
+    color: #0056b3;
+}
+
+.page-link.active {
+    background-color: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+
+.page-link.dots {
+    border: none;
+    padding: 8px;
+    cursor: default;
+}
+
+.page-link.dots:hover {
+    background-color: transparent;
+}
+
+@media (max-width: 576px) {
+    .pagination {
+        flex-wrap: wrap;
+    }
+    
+    .page-link {
+        padding: 6px 10px;
+        font-size: 0.9em;
+    }
 }
 
 th, td {
