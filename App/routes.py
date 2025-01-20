@@ -154,17 +154,14 @@ def search_suggestions():
         } for product in suggestions]
         
     elif page_type == 'manage_orders':
-        suggestions = Order.query.join(User).filter(
-            db.or_(
-                db.cast(Order.id, db.String).ilike(f'%{query}%'),
-                User.name.ilike(f'%{query}%')
-            )
-        ).limit(5).all()
+        suggestions = User.query.join(Order).filter(
+            User.name.ilike(f'%{query}%')
+        ).distinct().limit(5).all()
         
         results = [{
-            'name': f'Order #{order.id} - {order.user.name}',
-            'url': url_for('main.manage_orders', search=query)
-        } for order in suggestions]
+            'name': customer.name,
+            'url': url_for('main.manage_orders', search=customer.name)
+        } for customer in suggestions]
         
     else:
         # Original product search for customer products page
@@ -398,9 +395,21 @@ def delete_product(user_id, id):
     product = Product.query.get_or_404(id)
     
     try:
-        # Delete product images from filesystem
+        # Check if product has any orders
+        order_items = OrderItem.query.filter_by(ws_code=product.ws_code).first()
+        if order_items:
+            flash('Product cannot be deleted as orders exist for this product', 'error')
+            return redirect(url_for('main.manage_products'))
+        
+        # Begin transaction
+        db.session.begin_nested()
+        
+        # Delete product from database
+        db.session.delete(product)
+        db.session.flush()  # Flush to check for any DB errors
+        
+        # If database deletion successful, delete images
         if product.images:
-            print(os.path.join(UPLOAD_FOLDER, str(product.ws_code)))
             image_folder = os.path.join(UPLOAD_FOLDER, str(product.ws_code))
             if os.path.exists(image_folder):
                 for image in json.loads(product.images):
@@ -409,12 +418,13 @@ def delete_product(user_id, id):
                         os.remove(image_path)
                 os.rmdir(image_folder)
         
-        db.session.delete(product)
+        # Commit transaction
         db.session.commit()
         flash('Product deleted successfully!', 'success')
+        
     except Exception as e:
         db.session.rollback()
-        flash(f'Error deleting product: {str(e)}', 'error')
+        flash('Product cannot be deleted as it is referenced in orders', 'error')
     
     return redirect(url_for('main.manage_products'))
 
