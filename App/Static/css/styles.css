@@ -704,7 +704,8 @@ button:active {
 }
 
 .form-group {
-    margin-bottom: 15px;
+    margin-bottom: 20px;
+    position: relative;
     width: 100%;
 }
 
@@ -722,6 +723,38 @@ button:active {
     margin: 8px 0;
     border: 1px solid #ddd;
     border-radius: 4px;
+}
+
+.form-control.is-invalid {
+  border-color: #ffc107;
+  padding-right: calc(1.5em + 0.75rem);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23ffc107' viewBox='0 0 16 16'%3E%3Cpath d='M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm.93-9.412l-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right calc(0.375em + 0.1875rem) center;
+  background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+}
+
+.invalid-feedback {
+  display: none;
+  color: #856404;
+  background-color: #fff3cd;
+  border: 1px solid #ffeeba;
+  padding: 0.5rem;
+  margin-top: 0.25rem;
+  border-radius: 0.25rem;
+  position: absolute;
+  width: 100%;
+  z-index: 5;
+}
+
+.form-control.is-invalid:focus {
+  border-color: #ffc107;
+  box-shadow: 0 0 0 0.2rem rgba(255, 193, 7, 0.25);
+}
+
+
+.form-control.is-invalid ~ .invalid-feedback {
+  display: block;
 }
 
 /* Update responsive behavior */
@@ -754,6 +787,10 @@ nav {
     position: fixed;
     width: 100%;
     z-index: 1000;
+}
+
+.align-center{
+  align-content: center;
 }
 
 .logo {

@@ -1,5 +1,3 @@
-/templates/base.html
-
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -21,7 +19,8 @@
     />
     {% block extra_css %}{% endblock %}
   </head>
-  <body>
+  <body class="{% if 'admin/dashboard' in request.path %}admin-page{% endif %}">
+    {% if 'admin/dashboard' not in request.path %}
     <nav class="navbar">
       <div class="logo">
         <a href="{{ url_for('main.home') }}">
@@ -46,8 +45,6 @@
             >Products</a
           >
         </li>
-
-        <!-- I have a file named about.html in the templates folder which I want to include here -->
         <li>
           <a
             href="{{ url_for('main.about') }}"
@@ -55,8 +52,6 @@
             >About</a
           >
         </li>
-
-        <!-- When the user clicks on Why generic he should be redirected to https://youtube.com/shorts/o6-UtWI5pLA?si=w0V8KL2qCtS5-OEX -->
         <li>
           <a
             href="https://youtube.com/shorts/o6-UtWI5pLA?si=w0V8KL2qCtS5-OEX"
@@ -64,8 +59,6 @@
             >Why Generic</a
           >
         </li>
-
-        <!-- When the user clicks on contact then he should be redirected to contacts route -->
         <li>
           <a
             href="{{ url_for('main.contacts') }}"
@@ -73,8 +66,6 @@
             >Contact</a
           >
         </li>
-
-
       </ul>
       <div class="auth-section">
         {% if current_user.is_authenticated %}
@@ -109,18 +100,15 @@
           </div>
         </div>
         {% else %}
-        <a href="{{ url_for('main.signin') }}" style="padding: 15px 30px"
-          >Sign In</a
-        >
-        <a href="{{ url_for('main.signup') }}" style="padding: 15px 30px"
-          >Sign Up</a
-        >
+        <a href="{{ url_for('main.signin') }}" style="padding: 15px 30px">Sign In</a>
+        <a href="{{ url_for('main.signup') }}" style="padding: 15px 30px">Sign Up</a>
         {% endif %}
       </div>
     </nav>
-
-    <div class="main-content">{% block content %}{% endblock %}</div>
-
+    {% endif %}
+    
+    <div class="main-content {% if 'signin' in request.path or 'signup' in request.path %} align-center {% endif %}">{% block content %}{% endblock %}</div>
+    
     {% block scripts %}{% endblock %}
   </body>
 
