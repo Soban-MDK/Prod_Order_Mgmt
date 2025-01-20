@@ -2,12 +2,29 @@
 
 {% block content %}
 <div class="orders-container">
-    <h1>Manage Orders</h1>
+
+    <div class="header-actions">
+        <h2>Manage Orders</h2>
+        <div class="header-buttons">
+            <a href="{{ url_for('main.admin_dashboard') }}" class="dashboard-btn">Dashboard</a>
+            <a href="{{ url_for('main.manage_products') }}" class="dashboard-btn manage-products-btn" style="background-color: #2ecc71;">Manage Products</a>
+        </div>
+    </div>
 
     <div class="search-section">
-        <form method="GET" action="{{ url_for('main.manage_orders') }}" class="search-form">
-            <input type="text" name="search" value="{{ search }}" placeholder="Search by Order ID..." class="search-input"/>
-            <button type="submit" class="search-button">Search</button>
+        <form method="GET" class="search-form">
+            <div class="search-wrapper">
+                <input 
+                    type="text" 
+                    name="search" 
+                    value="{{ search }}" 
+                    placeholder="Search..." 
+                    class="search-input"
+                    autocomplete="off"
+                />
+                <div class="search-suggestions"></div>
+                <button type="submit" class="search-button">Search</button>
+            </div>
         </form>
     </div>
 
@@ -89,6 +106,36 @@
     max-width: 1200px;
     margin: 20px auto;
     padding: 20px;
+}
+
+.dashboard-btn {
+    padding: 10px 20px;
+    background: #4a90e2;
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+    font-weight: 500;
+    transition: background-color 0.3s ease;
+    margin-right: 10px;
+}
+
+.dashboard-btn:hover {
+    background: #357abd;
+    color: white;
+    text-decoration: none;
+}
+
+.header-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding: 0 20px;
+}
+
+.header-buttons {
+    display: flex;
+    gap: 10px;
 }
 
 .pending {
@@ -219,5 +266,124 @@ window.onclick = function(event) {
         modal.style.display = 'none';
     }
 }
+
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.querySelector('.search-input');
+    const suggestionsBox = document.querySelector('.search-suggestions');
+    const searchForm = document.querySelector('.search-form');
+    
+    let debounceTimer;
+
+    // Function to show suggestions
+    async function showSuggestions(query) {
+        if (!query) {
+            suggestionsBox.style.display = 'none';
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/search-suggestions?q=${encodeURIComponent(query)}`);
+            const data = await response.json();
+            
+            if (data.length > 0) {
+                suggestionsBox.innerHTML = data.map(item => `
+                    <div class="suggestion-item" data-value="${item.name}">
+                        ${item.name}
+                    </div>
+                `).join('');
+                suggestionsBox.style.display = 'block';
+            } else {
+                suggestionsBox.style.display = 'none';
+            }
+        } catch (error) {
+            console.error('Error fetching suggestions:', error);
+        }
+    }
+
+    // Handle input changes
+    searchInput.addEventListener('input', function(e) {
+        const query = e.target.value.trim();
+        clearTimeout(debounceTimer);
+        
+        if (!query) {
+            // If search is cleared, show all items
+            window.location.href = window.location.pathname;
+            return;
+        }
+        
+        debounceTimer = setTimeout(() => showSuggestions(query), 300);
+    });
+
+    // Handle suggestion clicks
+    suggestionsBox.addEventListener('click', function(e) {
+        const item = e.target.closest('.suggestion-item');
+        if (item) {
+            searchInput.value = item.dataset.value;
+            suggestionsBox.style.display = 'none';
+            searchForm.submit();
+        }
+    });
+
+    // Handle form submission
+    searchForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const query = searchInput.value.trim();
+        
+        if (!query) {
+            window.location.href = window.location.pathname;
+            return;
+        }
+        
+        const url = new URL(window.location.href);
+        url.searchParams.set('search', query);
+        window.location.href = url.toString();
+    });
+
+    // Close suggestions when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.search-wrapper')) {
+            suggestionsBox.style.display = 'none';
+        }
+    });
+});
+
+async function showSuggestions(query) {
+    if (!query) {
+        suggestionsBox.style.display = 'none';
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/search-suggestions?q=${encodeURIComponent(query)}&type=manage_products`);
+        const data = await response.json();
+        
+        if (data.length > 0) {
+            suggestionsBox.innerHTML = data.map(item => `
+                <div class="suggestion-item" data-url="${item.url}">
+                    <div>${item.name}</div>
+                    <div class="suggestion-ws-code">${item.ws_code}</div>
+                </div>
+            `).join('');
+            suggestionsBox.style.display = 'block';
+        } else {
+            suggestionsBox.style.display = 'none';
+        }
+    } catch (error) {
+        console.error('Error fetching suggestions:', error);
+    }
+}
+
 </script>
 {% endblock %}

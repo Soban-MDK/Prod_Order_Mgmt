@@ -134,22 +134,53 @@ def about():
 def search_suggestions():
     """Get search suggestions as user types."""
     query = request.args.get('q', '').strip()
+    page_type = request.args.get('type', '')
+    
     if len(query) < 1:
         return jsonify([])
         
-    suggestions = Product.query.filter(
-        db.or_(
-            Product.name.ilike(f'%{query}%'),
-            Product.ws_code.ilike(f'%{query}%')
-        )
-    ).limit(5).all()
-    
-    results = [{
-        'name': product.name,
-        'ws_code': product.ws_code,
-        'price': str(product.price),
-        'url': url_for('main.products', search=product.name)
-    } for product in suggestions]
+    if page_type == 'manage_products':
+        suggestions = Product.query.filter(
+            db.or_(
+                Product.name.ilike(f'%{query}%'),
+                Product.ws_code.ilike(f'%{query}%')
+            )
+        ).limit(5).all()
+        
+        results = [{
+            'name': product.name,
+            'ws_code': product.ws_code,
+            'url': url_for('main.manage_products', search=product.name)
+        } for product in suggestions]
+        
+    elif page_type == 'manage_orders':
+        suggestions = Order.query.join(User).filter(
+            db.or_(
+                db.cast(Order.id, db.String).ilike(f'%{query}%'),
+                User.name.ilike(f'%{query}%')
+            )
+        ).limit(5).all()
+        
+        results = [{
+            'name': f'Order #{order.id} - {order.user.name}',
+            'url': url_for('main.manage_orders', search=query)
+        } for order in suggestions]
+        
+    else:
+        # Original product search for customer products page
+        suggestions = Product.query.filter(
+            db.or_(
+                Product.name.ilike(f'%{query}%'),
+                Product.ws_code.ilike(f'%{query}%')
+            )
+        ).limit(5).all()
+        
+        results = [{
+            'name': product.name,
+            'ws_code': product.ws_code,
+            'price': str(product.price),
+            'url': url_for('main.products', search=product.name)
+        } for product in suggestions]
     
     return jsonify(results)
 
@@ -396,10 +427,14 @@ def manage_orders(user_id):
     page = request.args.get('page', 1, type=int)
     per_page = 10
 
-    # Initialize query
     query = Order.query
     if search:
-        query = query.filter(Order.id == search)
+        query = query.join(User).filter(
+            db.or_(
+                db.cast(Order.id, db.String).ilike(f'%{search}%'),
+                User.name.ilike(f'%{search}%')
+            )
+        )
     
     # Get status counts
     status_counts = {
@@ -409,22 +444,11 @@ def manage_orders(user_id):
         'delivered': Order.query.filter_by(status='delivered').count()
     }
     
-    # Updated case statement syntax
-    status_order = db.case(
-        (Order.status == 'pending', 1),
-        (Order.status == 'accepted', 2),
-        (Order.status == 'rejected', 3),
-        (Order.status == 'delivered', 4),
-        else_=5
+    orders = query.order_by(Order.order_date.desc()).paginate(
+        page=page,
+        per_page=per_page,
+        error_out=False
     )
-    
-    # Order by status and date
-    query = query.order_by(
-        status_order,
-        Order.order_date.desc()
-    )
-    
-    orders = query.paginate(page=page, per_page=per_page, error_out=False)
     
     return render_template(
         'manage_orders.html',
@@ -432,7 +456,6 @@ def manage_orders(user_id):
         search=search,
         status_counts=status_counts
     )
-
 
 @main.route('/get_product_images/<ws_code>')
 def get_product_images(ws_code):
