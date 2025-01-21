@@ -285,9 +285,6 @@ def search_suggestions():
     return jsonify(results)
 
 
-
-
-# Admin Signin Route - Updated with proper token generation
 @main.route('/admin/signin', methods=['GET', 'POST'])
 @csrf.exempt
 def admin_signin():

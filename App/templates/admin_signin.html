@@ -70,11 +70,14 @@ head %} {{ super() }}
         const data = await response.json();
 
         if (response.ok) {
-          localStorage.setItem("admin_token", data.token);
+          localStorage.setItem("admin_token ", data.token.trim());
           showToast(data.message, "success");
 
+          console.log("Redirecting to .... ", data.redirect)
+
+          // Add a delay before redirect to show the toast message
           setTimeout(() => {
-            window.location.href = data.redirect;
+            window.location.replace(data.redirect); // Use data.redirect to navigate
           }, 1500);
         } else {
           document
