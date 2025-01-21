@@ -21,11 +21,12 @@ def create_app():
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'Soban_MKT')
     app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:password@localhost:5432/Medkart_Data'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    app.config['WTF_CSRF_ENABLED'] = True
+    app.config['WTF_CSRF_ENABLED'] = False  # Disable CSRF globally
     app.jinja_env.filters['from_json'] = from_json
 
     # Initialize extensions
     csrf = CSRFProtect(app)
+    csrf.init_app(app)
     db.init_app(app)
 
     with app.app_context():

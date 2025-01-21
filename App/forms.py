@@ -30,7 +30,7 @@ class ProductForm(FlaskForm):
     name = StringField('Product Name', validators=[
         DataRequired(),
         Length(max=100),
-        Regexp(r'^[a-zA-Z\s]+$', message="Product name must contain only letters and spaces")
+        Regexp(r'^[a-zA-Z0-9\s]+$', message="Product name must contain only letters and spaces")
     ])
     ws_code = StringField('WS Code', validators=[
         DataRequired(),
@@ -55,7 +55,7 @@ class ProductForm(FlaskForm):
     ])
     tags = StringField('Tags (comma separated)', validators=[
         DataRequired(),
-        Regexp(r'^[a-zA-Z\s,]+$', message="Tags must contain only letters, spaces, and commas")
+        Regexp(r'^[a-zA-Z0-9\s,]+$', message="Tags must contain only letters, spaces, and commas")
     ])
     category = SelectField('Category', 
         choices=[('Medicines', 'Medicines'), ('Devices', 'Devices')],

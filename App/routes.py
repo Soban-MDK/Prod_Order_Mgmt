@@ -60,30 +60,36 @@ def save_product_images(files, ws_code):
 def home():
     return render_template('home.html', title='Home')
 
-@main.route('/contacts')
-def contacts():
-    return render_template('contacts.html', title='Contact Us')
-
-# Signup Route
 @main.route('/signup', methods=['GET', 'POST'])
 def signup():
     form = SignupForm()
     if request.method == 'POST':
-        if form.validate_on_submit():
-            hashed_password = bcrypt.generate_password_hash(form.password.data).decode('utf-8')
-            new_user = User(name=form.name.data, email=form.email.data, password=hashed_password)
-            try:
-                db.session.add(new_user)
-                db.session.commit()
-                token = generate_token(new_user.id)
-                return jsonify({'status': 'success', 'message': 'Account created successfully!', 'redirect': url_for('main.home')}), 200
-            except Exception as e:
-                db.session.rollback()
-                return jsonify({'status': 'error', 'message': str(e)}), 500
-        else:
-            return jsonify({'status': 'error', 'errors': form.errors}), 400
-    
-    # Render the form on GET request
+        try:
+            data = request.get_json() if request.is_json else form.data
+            
+            hashed_password = bcrypt.generate_password_hash(data['password']).decode('utf-8')
+            new_user = User(
+                name=data['name'],
+                email=data['email'],
+                password=hashed_password
+            )
+            
+            db.session.add(new_user)
+            db.session.commit()
+            
+            token = generate_token(new_user.id)
+            response = jsonify({
+                'status': 'success',
+                'message': 'Account created successfully',
+                'token': token
+            })
+            response.set_cookie('access_token', token, httponly=True, max_age=7*60*60)
+            return response
+            
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'status': 'error', 'message': str(e)}), 500
+            
     return render_template('signup.html', form=form)
 
 
@@ -126,9 +132,106 @@ def signin():
     return render_template('signin.html', form=form)
 
 
+# Contact us Route
+@main.route('/contacts')
+def contacts():
+    return render_template('contacts.html', title='Contact Us')
+
+# About Route
 @main.route('/about')
 def about():
     return render_template('about.html')
+
+# Products Page Route
+@main.route('/products')
+def products():
+    """Display products for customers with search and pagination."""
+    search = request.args.get('search', '')
+    page = request.args.get('page', 1, type=int)
+    per_page = 8  # Show 8 products per page
+    
+    query = Product.query
+    if search:
+        query = query.filter(
+            db.or_(
+                Product.name.ilike(f'%{search}%'),
+                Product.ws_code.ilike(f'%{search}%')
+            )
+        )
+
+    query = query.order_by(
+        (Product.quantity_in_stock > 0).desc(), 
+        Product.name.asc() 
+    )
+    
+    products = query.paginate(
+        page=page, per_page=per_page, error_out=False
+    )
+    return render_template('products.html', products=products, search=search)
+
+# Route for viewing the cart
+@main.route('/cart')
+@token_required
+@login_required
+def view_cart(user_id):
+    """View cart contents."""
+    cart_items = CartItem.query.filter_by(user_id=current_user.id).all()
+    total = sum(item.quantity * item.product.price for item in cart_items)
+    return render_template('cart.html', cart_items=cart_items, total=total)
+
+
+# API call to calculate the number of items in cart
+@main.route('/cart/count')
+@token_required
+@login_required
+def get_cart_count(user_id):
+    """Get count of items in cart."""
+    count = CartItem.query.filter_by(user_id=current_user.id).with_entities(
+        db.func.sum(CartItem.quantity)
+    ).scalar() or 0
+    return jsonify({'count': int(count)})
+
+
+# API Call to update the cart i.e to increase or decrease the quantity of an item in the cart
+@main.route('/cart/update', methods=['POST'])
+@csrf.exempt
+@token_required
+@login_required
+def update_cart(user_id):
+    """Update cart item quantity."""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+
+        ws_code = data.get('ws_code')
+        quantity = int(data.get('quantity', 0))
+        
+        cart_item = CartItem.query.filter_by(
+            user_id=current_user.id, 
+            ws_code=ws_code
+        ).first()
+        
+        if not cart_item:
+            return jsonify({'error': 'Cart item not found'}), 404
+        
+        if quantity > 0:
+            # Check stock availability
+            product = Product.query.filter_by(ws_code=ws_code).first()
+            if product.quantity_in_stock < quantity:
+                return jsonify({'error': 'Not enough stock available'}), 400
+            cart_item.quantity = quantity
+        else:
+            db.session.delete(cart_item)
+        
+        db.session.commit()
+        return jsonify({'message': 'Cart updated successfully'})
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 400
+
+
 
 @main.route('/api/search-suggestions')
 def search_suggestions():
@@ -181,27 +284,6 @@ def search_suggestions():
     
     return jsonify(results)
 
-# Products Page Route
-@main.route('/products')
-def products():
-    """Display products for customers with search and pagination."""
-    search = request.args.get('search', '')
-    page = request.args.get('page', 1, type=int)
-    per_page = 8  # Show 8 products per page
-    
-    query = Product.query
-    if search:
-        query = query.filter(
-            db.or_(
-                Product.name.ilike(f'%{search}%'),
-                Product.ws_code.ilike(f'%{search}%')
-            )
-        )
-    
-    products = query.order_by(Product.name).paginate(
-        page=page, per_page=per_page, error_out=False
-    )
-    return render_template('products.html', products=products, search=search)
 
 
 
@@ -484,65 +566,6 @@ def get_product_images(ws_code):
     return jsonify({'images': []})
 
 
-@main.route('/cart')
-@token_required
-@login_required
-def view_cart(user_id):
-    """View cart contents."""
-    cart_items = CartItem.query.filter_by(user_id=current_user.id).all()
-    total = sum(item.quantity * item.product.price for item in cart_items)
-    return render_template('cart.html', cart_items=cart_items, total=total)
-
-
-@main.route('/cart/count')
-@token_required
-@login_required
-def get_cart_count(user_id):
-    """Get count of items in cart."""
-    count = CartItem.query.filter_by(user_id=current_user.id).with_entities(
-        db.func.sum(CartItem.quantity)
-    ).scalar() or 0
-    return jsonify({'count': int(count)})
-
-
-@main.route('/cart/update', methods=['POST'])
-@csrf.exempt
-@token_required
-@login_required
-def update_cart(user_id):
-    """Update cart item quantity."""
-    try:
-        data = request.get_json()
-        if not data:
-            return jsonify({'error': 'No data provided'}), 400
-
-        ws_code = data.get('ws_code')
-        quantity = int(data.get('quantity', 0))
-        
-        cart_item = CartItem.query.filter_by(
-            user_id=current_user.id, 
-            ws_code=ws_code
-        ).first()
-        
-        if not cart_item:
-            return jsonify({'error': 'Cart item not found'}), 404
-        
-        if quantity > 0:
-            # Check stock availability
-            product = Product.query.filter_by(ws_code=ws_code).first()
-            if product.quantity_in_stock < quantity:
-                return jsonify({'error': 'Not enough stock available'}), 400
-            cart_item.quantity = quantity
-        else:
-            db.session.delete(cart_item)
-        
-        db.session.commit()
-        return jsonify({'message': 'Cart updated successfully'})
-
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': str(e)}), 400
-
 @main.route('/order/place', methods=['POST'])
 @csrf.exempt  # Add CSRF exemption
 @token_required
@@ -665,34 +688,41 @@ def orders(user_id):
 @token_required
 @login_required
 def order_details(user_id, order_id):
-    """Get order details."""
-    order = Order.query.filter_by(
-        id=order_id, 
-        user_id=current_user.id
-    ).first()
+    page = request.args.get('page', 1, type=int)
+    per_page = 8  # Items per page
     
-    if not order:
-        return jsonify({'error': 'Order not found'}), 404
+    order = Order.query.get_or_404(order_id)
+    if order.user_id != current_user.id:
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    # Get paginated order items
+    items_pagination = OrderItem.query.filter_by(order_id=order_id).paginate(
+        page=page, per_page=per_page, error_out=False
+    )
     
-    items = []
-    for item in order.items:
-        product = Product.query.filter_by(ws_code=item.ws_code).first()
-        items.append({
-            'product_name': product.name if product else 'Unknown Product',
-            'quantity': item.quantity,
-            'price': item.price,
-            'ws_code': item.ws_code
-        })
-    
+    items = [{
+        'product_name': item.product.name,
+        'quantity': item.quantity,
+        'price': float(item.price),
+        'total': float(item.price * item.quantity)
+    } for item in items_pagination.items]
+
     return jsonify({
         'order': {
             'id': order.id,
-            'order_date': order.order_date,
+            'order_date': order.order_date.isoformat(),
             'status': order.status,
-            'total_amount': order.total_amount
+            'total_amount': float(order.total_amount)
+        },
+        'pagination': {
+            'has_next': items_pagination.has_next,
+            'has_prev': items_pagination.has_prev,
+            'total_pages': items_pagination.pages,
+            'current_page': items_pagination.page
         },
         'items': items
     })
+
 
 @main.route('/admin/order/<int:order_id>/details')
 @admin_required

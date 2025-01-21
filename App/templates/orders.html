@@ -223,6 +223,33 @@ th {
     z-index: 1000;
 }
 
+.modal-pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px 0;
+    gap: 10px;
+}
+
+.modal-pagination .page-link {
+    padding: 8px 12px;
+    border: 1px solid #dee2e6;
+    background-color: #fff;
+    color: #007bff;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.modal-pagination .page-link:hover {
+    background-color: #f8f9fa;
+    color: #0056b3;
+}
+
+.modal-pagination .page-info {
+    padding: 8px 12px;
+    color: #6c757d;
+}
+
 .modal-content {
     background: white;
     margin: 5% auto;
@@ -269,9 +296,12 @@ th {
 </style>
 
 <script>
-async function viewOrderDetails(orderId) {
+let currentOrderId = null;
+
+async function viewOrderDetails(orderId, page = 1) {
+    currentOrderId = orderId;
     try {
-        const response = await fetch(`/order/${orderId}/details`);
+        const response = await fetch(`/order/${orderId}/details?page=${page}`);
         const data = await response.json();
         
         if (response.ok) {
@@ -304,11 +334,22 @@ async function viewOrderDetails(orderId) {
                                         <td>${item.product_name}</td>
                                         <td>${item.quantity}</td>
                                         <td>₹${item.price.toFixed(2)}</td>
-                                        <td>₹${(item.quantity * item.price).toFixed(2)}</td>
+                                        <td>₹${item.total.toFixed(2)}</td>
                                     </tr>
                                 `).join('')}
                             </tbody>
                         </table>
+                        
+                        <!-- Pagination Controls -->
+                        <div class="modal-pagination">
+                            ${data.pagination.has_prev ? 
+                                `<button onclick="viewOrderDetails(${currentOrderId}, ${data.pagination.current_page - 1})" class="page-link">&laquo; Previous</button>` : ''}
+                            
+                            <span class="page-info">Page ${data.pagination.current_page} of ${data.pagination.total_pages}</span>
+                            
+                            ${data.pagination.has_next ? 
+                                `<button onclick="viewOrderDetails(${currentOrderId}, ${data.pagination.current_page + 1})" class="page-link">Next &raquo;</button>` : ''}
+                        </div>
                     </div>
                 </div>
             `;

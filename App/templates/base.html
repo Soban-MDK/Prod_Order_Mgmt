@@ -115,10 +115,11 @@
 <!-- Update the script section -->
 <script>
   document.addEventListener('DOMContentLoaded', async function() {
-    if ( {{current_user.is_authenticated}} ) {
-      await updateCartCount();
+    const isAuthenticated = {% if current_user.is_authenticated %}true{% else %}false{% endif %};
+    if (isAuthenticated) {
+        await updateCartCount();
     }
-  });
+});
 
 
   async function updateCartCount() {

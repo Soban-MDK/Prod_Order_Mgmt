@@ -1,10 +1,11 @@
 {% extends 'base3.html' %}
 
+{% block title %}Add Products{% endblock %}
 <!-- Extra styles -->
 
 
 {% block content %}
-    <div class="container mt-5" style="overflow: hidden; border: 2px solid black; padding: 20px;">
+    <div class="container mt-5" style="overflow: hidden; border: 2px solid black; padding: 20px; width: 975px;">
         <h2>Add Product</h2>
         <form method="POST" enctype="multipart/form-data">
             {{ form.hidden_tag() }}
